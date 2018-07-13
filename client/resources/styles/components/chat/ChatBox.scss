@@ -1,0 +1,50 @@
+.chat-box {
+    width: 448px;
+    background: $white;
+    border-radius: 15px 15px 0px 0px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.chat-box-input {
+    width: 448px;
+    height: auto;
+    background: #F9FAFE;
+    border: 2px solid #E7EDF3;
+    border-radius: 15px 15px 0px 0px;
+}
+
+.chat-message {
+    width: 448px;
+    height: auto;
+    background: #F9FAFE;
+    border: 2px solid #E7EDF3;
+    border-radius: 15px 15px 0px 0px;
+    Margin-right: 15px
+Margin-top: 5px
+
+}
+
+.chat-message-shadow {
+    box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);
+}
+
+.chat-timer {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.chat-text {
+    // Copy paste
+}
+
+.chat-timer-text {
+    font-size: 10px;
+    font-weight: regular;
+    color: #8d8d8d;
+    padding-top: 3px;
+    Padding-bottom: 9px;
+
+}
