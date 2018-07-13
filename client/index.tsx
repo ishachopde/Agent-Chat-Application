@@ -7,9 +7,12 @@ import initialState from "./initialState";
 //mport reducers from 'reducers';
 //import startChat from './chat';
 import startChat, {chatMiddleware} from './chat-middlerware';
- 
+ console.log(initialState);
 import { configure } from './store';
-const store = configure(initialState);
+const store = configure({
+    userName : "",
+    chats: {}
+});
 startChat(store);
 //startChat(store);
 const ROOT = document.querySelector(".container");

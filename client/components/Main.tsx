@@ -492,7 +492,7 @@ export class Main extends React.Component<IProps, {}> {
             // if (trimmedMessage) {
             console.log("Key presed");
             const store = getStore();
-            store.dispatch(addMessage());
+            store.dispatch(addMessage("demo"));
             //  }
 
             ev.preventDefault();

@@ -6,7 +6,7 @@ export function updateMessage(message) {
   return { type: UPDATE_MESSAGE, message };
 }
  
-export function addMessage() {
+export function addMessage(message) {
   return { type: ADD_MESSAGE };
 }
  
