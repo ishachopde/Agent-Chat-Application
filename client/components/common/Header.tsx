@@ -8,7 +8,12 @@ export class Header extends React.Component<{}, {}> {
             <li className="title"><div className="header-logo-item"><div className="header-logo"/></div></li>
             <li className="ml-auto"/>
             <li className="">
-                <a href="/">Feedback</a>
+                <div className="time"> Away</div>
+                <select className="status">
+                    <option  value="Online"><input type="radio-button"/> Online</option>
+                    <option  value="Offline">Offline</option>
+
+                </select>
             </li>
         </ul>
         );

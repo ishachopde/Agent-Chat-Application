@@ -49,3 +49,17 @@ ul.menu-list {
     width: 50px;
     color: transparent;
   }
+
+select.status {
+    margin-top: 10px;
+    background: #F9FAFE;
+    border: 2px solid #A3ABB3;
+    border-radius: 15px;
+
+  select.status:hover{
+    background: #E7EDF3;
+  }
+
+
+}
+
