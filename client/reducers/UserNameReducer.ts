@@ -1,8 +1,16 @@
-const userName = "";
+const userName = {
+    name : "",
+    isAgent: false
+};
 export default (state = userName, action) => {
     switch(action.type) {
-        case 'change-username':
-            return action.payload.userName;
+        case 'change-userinfo':
+            return {
+                ...state,
+                name: action.payload.userName,
+                isAgent: action.payload.isAgent,
+                id: action.payload.id
+            };
         default: 
             return state;
     }

@@ -10,8 +10,19 @@ import startChat, {chatMiddleware} from './chat-middlerware';
  console.log(initialState);
 import { configure } from './store';
 const store = configure({
-    userName : "",
-    chats: {}
+    agent: {
+        name: "",
+        id: ""
+    },
+    user : {
+        name: "",
+        isAgent: false,
+        id: ""
+    },
+    chatBoard: {
+        chatBoardId: ""
+    },
+    chats: []
 });
 startChat(store);
 //startChat(store);

@@ -1,6 +1,30 @@
+ul {
+  list-style: none;
+  word-wrap: break-word;
+}
+
+/* Pages */
+
+.pages {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.page {
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+/* Login Page */
+
 .login.page {
   background-color: #000;
 }
+
+
 
 .login.page .form {
   height: 100px;
@@ -20,6 +44,11 @@
   padding-bottom: 15px;
   text-align: center;
   width: 400px;
+}
+
+.login.page .form .agent-checkbox{
+  color: white;
+  margin-top: 20px;
 }
 
 .login.page .title {
