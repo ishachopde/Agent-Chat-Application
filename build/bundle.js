@@ -98,7 +98,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UPDATE_MESSAGE = 'update-message';
 exports.SEND_MESSAGE_TO_AGENT = 'send-message-to-agent';
-exports.ADD_RESPONSE = 'add-response';
+exports.MESSAGE_RECEIVED = 'message-received';
 function updateMessage(message) {
     return { type: exports.UPDATE_MESSAGE, message };
 }
@@ -112,10 +112,14 @@ function sendMessageToAgent(message) {
     };
 }
 exports.sendMessageToAgent = sendMessageToAgent;
-function addResponse(message) {
-    return { type: exports.ADD_RESPONSE, message };
+function messageReceive(message) {
+    return { type: exports.MESSAGE_RECEIVED,
+        payload: {
+            message: message
+        }
+    };
 }
-exports.addResponse = addResponse;
+exports.messageReceive = messageReceive;
 
 
 /***/ }),
@@ -133,6 +137,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CHANGE_USERINFO = 'change-userinfo';
 exports.CREATE_CHAT_BOARD = 'create-chat-board';
 exports.AGENT_ASSIGNED = 'agent-assigned';
+exports.USER_ASSIGNED = 'user-connected';
 function setUserInfo(userName, isAgent, id) {
     return {
         type: exports.CHANGE_USERINFO,
@@ -162,6 +167,15 @@ function agentAssigned(agent) {
     };
 }
 exports.agentAssigned = agentAssigned;
+function userConnected(user) {
+    return {
+        type: exports.USER_ASSIGNED,
+        payload: {
+            user
+        }
+    };
+}
+exports.userConnected = userConnected;
 
 
 /***/ }),
@@ -179,9 +193,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const io = __webpack_require__(/*! socket.io-client */ "./node_modules/socket.io-client/lib/index.js");
 var socket = null;
 const userActions_1 = __webpack_require__(/*! ./actions/userActions */ "./client/actions/userActions.ts");
+const messageActions_1 = __webpack_require__(/*! ./actions/messageActions */ "./client/actions/messageActions.ts");
 function chatMiddleware(store) {
     return next => action => {
         const result = next(action);
+        console.log(store.getState());
         if (socket && action.type === "send-message-to-agent") {
             console.log("Emitting messages");
             socket.emit('message', action.payload.message);
@@ -201,11 +217,13 @@ exports.chatMiddleware = chatMiddleware;
 function default_1(store) {
     socket = io();
     socket.on('message', data => {
-        console.log(data);
+        store.dispatch(messageActions_1.messageReceive(data));
     });
-    socket.on('agent-assigned', data => {
-        console.log(data);
+    socket.on('agent-connected', data => {
         store.dispatch(userActions_1.agentAssigned(data));
+    });
+    socket.on('user-connected', data => {
+        store.dispatch(userActions_1.userConnected(data));
     });
 }
 exports.default = default_1;
@@ -229,160 +247,89 @@ const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
 __webpack_require__(/*! ../resources/styles/components/Main.scss */ "./client/resources/styles/components/Main.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
+const maxActiveChats = 3;
 class AgentChatClass extends React.Component {
     constructor(props) {
         super(props);
-        console.log("Main render");
+        this.handleMessageChange = (e, userId) => {
+            const inputMessages = this.state.inputMessages;
+            inputMessages[userId] = e.target.value;
+            this.setState({
+                inputMessages
+            });
+        };
+        const { connectedUsers } = this.props;
+        this.state = {
+            activeChats: [],
+            inputMessages: {}
+        };
+    }
+    static getDerivedStateFromProps(newProps, state) {
+        const { connectedUsers } = newProps;
+        if (state.activeChats.length < maxActiveChats) {
+            state = {
+                activeChats: connectedUsers.slice(0, maxActiveChats)
+            };
+        }
+        return state;
+    }
+    renderChatHistory(chats, user) {
+        console.log(chats);
+        if (!chats) {
+            return "";
+        }
+        const renderChats = chats.map((message, index) => {
+            if (message.senderId === user.id)
+                return (React.createElement("div", { key: index, className: "chat-left" },
+                    React.createElement("div", { className: "chat-message-left clearfix" },
+                        React.createElement("div", { className: "chat-message-content clearfix" },
+                            React.createElement("p", null, message.message)))));
+            else
+                return (React.createElement("div", { key: index, className: "chat-right" },
+                    React.createElement("div", { className: "chat-message-right clearfix" },
+                        React.createElement("div", { className: "chat-message-content clearfix" },
+                            React.createElement("p", null, message.message)))));
+        });
+        return (React.createElement("div", { className: "chat-history" }, renderChats));
+    }
+    renderActiveChats() {
+        const { chats, user } = this.props;
+        const { inputMessages } = this.state;
+        return this.state.activeChats.map((activeChat, index) => {
+            const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
+            return (React.createElement("div", { key: index, id: `live-chat-${index + 1}`, className: "live-chat" },
+                React.createElement("header", null,
+                    React.createElement("div", { className: "chat-timer" },
+                        React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
+                    React.createElement("h4", null, activeChat.name)),
+                React.createElement("div", { className: "chat" },
+                    this.renderChatHistory(chats[activeChat.id], user),
+                    React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
+                    React.createElement("div", { className: "chat-text-area" },
+                        React.createElement("textarea", { value: inputMessage, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4, cols: 50 })))));
+        });
     }
     render() {
-        console.log(this.props);
+        console.log(this.state);
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
-            React.createElement("div", { id: "live-chat-1", className: "live-chat" },
-                React.createElement("header", null,
-                    React.createElement("div", { className: "chat-timer" },
-                        React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
-                    React.createElement("h4", null, "John Doe")),
-                React.createElement("div", { className: "chat" },
-                    React.createElement("div", { className: "chat-history" },
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Error, explicabo quasi ratione odio dolorum harum.")))),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left" },
-                                React.createElement("div", { className: "chat-message-content" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")),
-                                React.createElement("div", { className: "chat-time-left" }, "13.45")))),
-                    React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
-                    React.createElement("div", { className: "chat-text-area" },
-                        React.createElement("textarea", { rows: 4, cols: 50 })))),
-            React.createElement("div", { id: "live-chat-2", className: "live-chat" },
-                React.createElement("header", null,
-                    React.createElement("div", { className: "chat-timer" },
-                        React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
-                    React.createElement("h4", null, "John Doe")),
-                React.createElement("div", { className: "chat" },
-                    React.createElement("div", { className: "chat-history" },
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Error, explicabo quasi ratione odio dolorum harum.")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left" },
-                                React.createElement("div", { className: "chat-message-content" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")),
-                                React.createElement("div", { className: "chat-time-left" }, "13.45"))),
-                        React.createElement("hr", null)),
-                    React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
-                    React.createElement("div", { className: "chat-text-area" },
-                        React.createElement("textarea", { rows: 4, cols: 50 })))),
-            React.createElement("div", { id: "live-chat-3", className: "live-chat" },
-                React.createElement("header", null,
-                    React.createElement("div", { className: "chat-timer" },
-                        React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
-                    React.createElement("h4", null, "John Doe")),
-                React.createElement("div", { className: "chat" },
-                    React.createElement("div", { className: "chat-history" },
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Error, explicabo quasi ratione odio dolorum harum.")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-                        React.createElement("div", { className: "chat-right" },
-                            React.createElement("div", { className: "chat-message-right clearfix" },
-                                React.createElement("div", { className: "chat-message-content clearfix" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-                        React.createElement("hr", null),
-                        React.createElement("div", { className: "chat-left" },
-                            React.createElement("div", { className: "chat-message-left" },
-                                React.createElement("div", { className: "chat-message-content" },
-                                    React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")),
-                                React.createElement("div", { className: "chat-time-left" }, "13.45"))),
-                        React.createElement("hr", null)),
-                    React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
-                    React.createElement("div", { className: "chat-text-area" },
-                        React.createElement("textarea", { rows: 4, cols: 50 }))))));
+            this.renderActiveChats.call(this)));
     }
-    handleChange(ev) {
-    }
-    handleKeyPress(ev) {
+    handleKeyPress(ev, senderId, receiverId) {
+        const { inputMessages } = this.state;
+        const message = (inputMessages[receiverId] ? inputMessages[receiverId] : "");
         if (ev.which === 13) {
-            console.log("Key presed");
             const store = store_1.getStore();
-            store.dispatch(messageActions_1.sendMessageToAgent("demo"));
+            store.dispatch(messageActions_1.sendMessageToAgent({
+                senderId,
+                receiverId,
+                message
+            }));
+            const inputMessages = this.state.inputMessages;
+            inputMessages[receiverId] = "";
+            this.setState({
+                inputMessages
+            });
             ev.preventDefault();
         }
     }
@@ -391,6 +338,7 @@ const mapStateToProps = state => {
     return {
         user: state.user,
         chatBoard: state.chatBoard,
+        connectedUsers: state.connectedUsers,
         chats: state.chats,
     };
 };
@@ -462,57 +410,27 @@ class MainClass extends React.Component {
         };
     }
     renderChatHistory(chats, agent, user) {
+        if (!chats) {
+            return "";
+        }
         const renderChats = chats.map((message, index) => {
             console.log(message);
-            if (chats.userId === user.id)
+            if (message.senderId === user.id)
                 return (React.createElement("div", { key: index, className: "chat-left" },
                     React.createElement("div", { className: "chat-message-left clearfix" },
                         React.createElement("div", { className: "chat-message-content clearfix" },
                             React.createElement("p", null, message.message)))));
             else
-                return (React.createElement("div", { key: index, className: "chat-left" },
-                    React.createElement("div", { className: "chat-message-left clearfix" },
+                return (React.createElement("div", { key: index, className: "chat-right" },
+                    React.createElement("div", { className: "chat-message-right clearfix" },
                         React.createElement("div", { className: "chat-message-content clearfix" },
                             React.createElement("p", null, message.message)))));
         });
-        return (React.createElement("div", { className: "chat-history" },
-            renderChats,
-            React.createElement("div", { className: "chat-right" },
-                React.createElement("div", { className: "chat-message-right clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-            React.createElement("div", { className: "chat-right" },
-                React.createElement("div", { className: "chat-message-right clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-            React.createElement("div", { className: "chat-right" },
-                React.createElement("div", { className: "chat-message-right clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Blanditiis, nulla accusamus magni vel debitis numquam qui tempora rem voluptatem delectus!")))),
-            React.createElement("div", { className: "chat-left" },
-                React.createElement("div", { className: "chat-message-left clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Error, explicabo quasi ratione odio dolorum harum.")))),
-            React.createElement("div", { className: "chat-left" },
-                React.createElement("div", { className: "chat-message-left clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-            React.createElement("div", { className: "chat-left" },
-                React.createElement("div", { className: "chat-message-left clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-            React.createElement("div", { className: "chat-left" },
-                React.createElement("div", { className: "chat-message-left clearfix" },
-                    React.createElement("div", { className: "chat-message-content clearfix" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")))),
-            React.createElement("div", { className: "chat-left" },
-                React.createElement("div", { className: "chat-message-left" },
-                    React.createElement("div", { className: "chat-message-content" },
-                        React.createElement("p", null, "Lorem ipsum dolor sit amet, consectetur adipisicing.")),
-                    React.createElement("div", { className: "chat-time-left" }, "13.45")))));
+        return (React.createElement("div", { className: "chat-history" }, renderChats));
     }
     render() {
         const { agent, user, chatBoard, chats } = this.props;
+        console.log(this.props);
         if (!agent.id) {
             return (React.createElement("div", null, "Waiting for agent....."));
         }
@@ -524,12 +442,14 @@ class MainClass extends React.Component {
                         React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
                     React.createElement("h4", null, agent.userName)),
                 React.createElement("div", { className: "chat" },
-                    this.renderChatHistory(chats, agent, user),
+                    this.renderChatHistory(chats[agent.id], agent, user),
                     React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
                     React.createElement("div", { className: "chat-text-area" },
                         React.createElement("textarea", { value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4, cols: 50 }))))));
     }
     handleChange(ev) {
+    }
+    componentWillReceiveProps(newProps) {
     }
     handleKeyPress(ev) {
         const { agent, user, chatBoard } = this.props;
@@ -537,8 +457,8 @@ class MainClass extends React.Component {
         if (ev.which === 13) {
             const store = store_1.getStore();
             store.dispatch(messageActions_1.sendMessageToAgent({
-                userId: user.id,
-                agentId: agent.id,
+                senderId: user.id,
+                receiverId: agent.id,
                 message: message
             }));
             this.setState({
@@ -697,7 +617,8 @@ const store = store_1.configure({
     chatBoard: {
         chatBoardId: ""
     },
-    chats: []
+    connectedUsers: [],
+    chats: {}
 });
 chat_middlerware_1.default(store);
 const ROOT = document.querySelector(".container");
@@ -784,13 +705,62 @@ exports.default = (state = chatBoard, action) => {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const uuidv4 = __webpack_require__(/*! uuid/v4 */ "./node_modules/uuid/v4.js");
-const chats = [];
+const chats = {};
 exports.default = (state = chats, action) => {
     switch (action.type) {
         case 'send-message-to-agent':
+            const receiverId = action.payload.message.receiverId;
+            let messages = state[receiverId];
+            if (!messages) {
+                state[receiverId] = [action.payload.message];
+                return Object.create(state);
+            }
+            else {
+                state[receiverId] = [
+                    ...state[receiverId],
+                    action.payload.message
+                ];
+                return Object.create(state);
+            }
+            ;
+        case 'message-received':
+            const senderId = action.payload.message.senderId;
+            let msgs = state[senderId];
+            if (!msgs) {
+                state[senderId] = [action.payload.message];
+                return Object.create(state);
+            }
+            else {
+                state[senderId] = [
+                    ...state[senderId],
+                    action.payload.message
+                ];
+                return Object.create(Object.create(state));
+            }
+        default:
+            return state;
+    }
+};
+
+
+/***/ }),
+
+/***/ "./client/reducers/ConnectedUsers.ts":
+/*!*******************************************!*\
+  !*** ./client/reducers/ConnectedUsers.ts ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = (state = [], action) => {
+    switch (action.type) {
+        case 'user-connected':
             return [
                 ...state,
-                action.payload.message
+                action.payload.user
             ];
         default:
             return state;
@@ -963,6 +933,7 @@ const UserNameReducer_1 = __webpack_require__(/*! ./reducers/UserNameReducer */ 
 const ChatsReducer_1 = __webpack_require__(/*! ./reducers/ChatsReducer */ "./client/reducers/ChatsReducer.ts");
 const ChatBoardReducer_1 = __webpack_require__(/*! ./reducers/ChatBoardReducer */ "./client/reducers/ChatBoardReducer.ts");
 const AgentReducer_1 = __webpack_require__(/*! ./reducers/AgentReducer */ "./client/reducers/AgentReducer.ts");
+const ConnectedUsers_1 = __webpack_require__(/*! ./reducers/ConnectedUsers */ "./client/reducers/ConnectedUsers.ts");
 exports.configure = (initialState) => {
     const actionTrackerReducer = function (state = "", action) {
         switch (action.type) {
@@ -976,7 +947,8 @@ exports.configure = (initialState) => {
         user: UserNameReducer_1.default,
         chatBoard: ChatBoardReducer_1.default,
         chats: ChatsReducer_1.default,
-        agent: AgentReducer_1.default
+        agent: AgentReducer_1.default,
+        connectedUsers: ConnectedUsers_1.default
     });
     store = redux_1.createStore(appReducer, initialState, redux_1.compose(redux_1.applyMiddleware(chat_middlerware_1.chatMiddleware)));
     return store;

@@ -6,10 +6,11 @@ let userPool = {};
 module.exports = BaseController.extend ({
     on : function(io, socket) {
         socket.on('message', function(msg){
-            console.log(msg);
-            const agentId = msg.agentId;
-            agents[agentId].socket.emit('message', msg);
-           // io.sockets.emit( 'message', msg );
+            const senderId = msg.senderId;
+            const receiverId = msg.receiverId;
+
+            const receiver = userPool[receiverId];
+            receiver.socket.emit('message', msg);
         });
 
         socket.on('agent-assigned', function(data) {
@@ -17,7 +18,14 @@ module.exports = BaseController.extend ({
         });
 
         socket.on('create-board', function(data) {
+
             console.log(data);
+            userPool[data.chatBoardId] = {
+                socket,
+                userName: data.userName,
+                id: data.chatBoardId
+            };
+
             if(data.isAgent) {
                 agents[data.chatBoardId] = {
                     socket,
@@ -38,12 +46,22 @@ module.exports = BaseController.extend ({
                 const agent = randomAgent(agents);
                 console.log(agent);
 
-              //  io.sockets.emit('agent-assigned', "dffdd" );
-                socket.emit('agent-assigned', {
-                    userName: agent.userName,
-                    id: agent.id
-                 });
+                if(agent) {
+                    // Notify user agent is assigned.
+                    socket.emit('agent-connected', {
+                        userName: agent.userName,
+                        id: agent.id
+                    });
+
+                    // Notify agent user is assigned.
+                    agent.socket.emit('user-connected', {
+                        name: data.userName,
+                        id: data.chatBoardId
+                    })
+                }
+
             }
         });
     }
 });
+

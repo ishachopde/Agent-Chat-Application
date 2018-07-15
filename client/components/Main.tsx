@@ -32,9 +32,12 @@ class MainClass extends React.Component<IProps, IState> {
     }
 
     public renderChatHistory(chats, agent, user) {
+        if(!chats) {
+            return "";
+        }
         const renderChats = chats.map((message, index)=> {
             console.log(message);
-            if(chats.userId === user.id)
+            if(message.senderId === user.id)
                 return (
                     <div key={index} className="chat-left">
                         <div className="chat-message-left clearfix">
@@ -74,7 +77,7 @@ class MainClass extends React.Component<IProps, IState> {
 
     public render() {
         const { agent, user, chatBoard, chats} = this.props;
-
+        console.log(this.props);
         if(!agent.id) {
             return (
                 <div>
@@ -98,7 +101,7 @@ class MainClass extends React.Component<IProps, IState> {
                     </header>
                     <div className="chat">
 
-                        {this.renderChatHistory(chats, agent, user)}
+                        {this.renderChatHistory(chats[agent.id], agent, user)}
 
                         <p className="chat-feedback">Your partner is typing…</p>
 
@@ -120,6 +123,10 @@ class MainClass extends React.Component<IProps, IState> {
         //this.props.onChange(ev.target.value);
     }
 
+    componentWillReceiveProps(newProps){
+    
+    }
+
     handleKeyPress(ev) {
         const { agent, user, chatBoard} = this.props;
         const { message } = this.state;
@@ -129,8 +136,8 @@ class MainClass extends React.Component<IProps, IState> {
             // if (trimmedMessage) {
             const store = getStore();
             store.dispatch(sendMessageToAgent({
-                userId: user.id,
-                agentId: agent.id,
+                senderId: user.id,
+                receiverId: agent.id,
                 message: message
             }));
 

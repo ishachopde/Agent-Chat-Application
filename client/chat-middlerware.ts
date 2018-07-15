@@ -1,10 +1,12 @@
 import * as io from 'socket.io-client';
  
 var socket = null;
-import { agentAssigned } from "./actions/userActions";
+import { agentAssigned, userConnected } from "./actions/userActions";
+import { messageReceive } from "./actions/messageActions";
 export function chatMiddleware(store) {
   return next => action => {
     const result = next(action);
+    console.log(store.getState());
     if (socket && action.type === "send-message-to-agent") {
       //let messages = store.getState().messages;
         console.log("Emitting messages");
@@ -28,12 +30,14 @@ export default function (store) {
   socket = io();
  
   socket.on('message', data => {
-      console.log(data);
-   // store.dispatch(actions.addResponse(data));
+      store.dispatch(messageReceive(data));
   });
 
-    socket.on('agent-assigned', data => {
-        console.log(data);
+    socket.on('agent-connected', data => {
         store.dispatch(agentAssigned(data));
+    });
+
+    socket.on('user-connected', data => {
+        store.dispatch(userConnected(data));
     });
 }

@@ -5,6 +5,7 @@ import userNameReducer from "./reducers/UserNameReducer";
 import chatsReducer from "./reducers/ChatsReducer";
 import chatBoardReducer from "./reducers/ChatBoardReducer";
 import AgentReducer from "./reducers/AgentReducer";
+import connectedUsersReducer from "./reducers/ConnectedUsers";
 export const configure = (initialState) => {
     const actionTrackerReducer = function(state = "", action) {
         switch (action.type) {
@@ -19,7 +20,8 @@ export const configure = (initialState) => {
         user: userNameReducer,
         chatBoard: chatBoardReducer,
         chats: chatsReducer,
-        agent: AgentReducer
+        agent: AgentReducer,
+        connectedUsers: connectedUsersReducer
     });
 
     store = createStore(appReducer, initialState, compose(

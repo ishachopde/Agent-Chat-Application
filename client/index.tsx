@@ -22,7 +22,8 @@ const store = configure({
     chatBoard: {
         chatBoardId: ""
     },
-    chats: []
+    connectedUsers: [],
+    chats: {}
 });
 startChat(store);
 //startChat(store);
@@ -31,4 +32,4 @@ ReactDOM.render(
   <Provider store={store}>
     <App />
   </Provider>
-, ROOT);     
+, ROOT);
