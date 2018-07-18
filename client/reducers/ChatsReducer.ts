@@ -10,29 +10,29 @@ export default (state = chats, action) => {
 
             if(!messages) {
                 state[receiverId] = [action.payload.message];
-                return Object.create(state);
+                return Object.assign({},state);
             } else {
                 state[receiverId] = [
                     ...state[receiverId],
                     action.payload.message
                 ]
 
-                return Object.create(state);
+                return Object.assign({},state);
             };
         case 'message-received':
             const senderId = action.payload.message.senderId;
             let msgs = state[senderId];
             if(!msgs) {
                 state[senderId] = [action.payload.message];
-                return Object.create(state);
+                return Object.assign({},state);
             } else {
                 state[senderId] = [
                     ...state[senderId],
                     action.payload.message
                 ]
 
-                return Object.create(Object.create(state));
-            }   
+                return Object.assign({},state);
+            }    
         default:
             return state;
     }

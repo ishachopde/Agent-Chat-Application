@@ -1,7 +1,7 @@
 import * as React from "react";
 import { sendMessageToAgent } from "../actions/messageActions";
-import {getStore} from '../store';
-import "../resources/styles/components/Main.scss";
+import { getStore } from '../store';
+import "../resources/styles/components/Test.scss";
 import { Footer } from "./common/Footer";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
@@ -30,42 +30,22 @@ class MainClass extends React.Component<IProps, IState> {
             message: e.target.value
         })
     }
-
     public renderChatHistory(chats, agent, user) {
-        if(!chats) {
+        if (!chats) {
             return "";
         }
-        const renderChats = chats.map((message, index)=> {
-            console.log(message);
-            if(message.senderId === user.id)
+        const renderChats = chats.map((message, index) => {
+            if (message.senderId === user.id)
                 return (
-                    <div key={index} className="chat-left">
-                        <div className="chat-message-left clearfix">
-
-                            <div className="chat-message-content clearfix">
-
-                                <p>{message.message}</p>
-
-                            </div>
-
-                        </div>
+                    <div key={index} className="msg-left">
+                        <p>{message.message}</p>
                     </div>
                 );
             else
                 return (
-                    <div key={index} className="chat-right">
-                        <div className="chat-message-right clearfix">
-
-                            <div className="chat-message-content clearfix">
-
-
-                                <p>{message.message}</p>
-
-                            </div>
-
-                        </div>
+                    <div key={index} className="msg-right">
+                        <p>{message.message}</p>
                     </div>
-
                 );
         });
         return (
@@ -76,9 +56,8 @@ class MainClass extends React.Component<IProps, IState> {
     }
 
     public render() {
-        const { agent, user, chatBoard, chats} = this.props;
-        console.log(this.props);
-        if(!agent.id) {
+        const { agent, user, chatBoard, chats } = this.props;
+        if (!agent.id) {
             return (
                 <div>
                     Waiting for agent.....
@@ -89,46 +68,38 @@ class MainClass extends React.Component<IProps, IState> {
         return (
             <div>
                 <Header />
-                <div id="live-chat-1" className={"live-chat"}>
-                    <header>
+                
+                <div className="msg_box" >
+                    <div className="msg_head">
+
                         <div className="chat-timer">
                             <span className="chat-timer-text"> 5.4s</span>
-
                         </div>
-                        <h4>{agent.userName}</h4>
-
-
-                    </header>
-                    <div className="chat">
-
-                        {this.renderChatHistory(chats[agent.id], agent, user)}
-
-                        <p className="chat-feedback">Your partner is typing…</p>
-
-                        <div className="chat-text-area">
-                            <textarea value={this.state.message}
+                        <h4>{agent.userName} {agent.isOnline}</h4>
+                    </div>
+                    <div className="msg_wrap">
+                        <div className="msg_body">
+                            <div className="msg_push">
+                                {this.renderChatHistory(chats[agent.id], agent, user)}
+                            </div>
+                        </div><div className="msg_footer">
+                            <textarea className="msg_input" value={this.state.message}
                                 onKeyPress={this.handleKeyPress.bind(this)}
-                                      onChange={this.handleMessageChange.bind(this)}
-                                      rows={4} cols={50}/>
+                                onChange={this.handleMessageChange.bind(this)}
+                                rows={4} />
                         </div>
-
-
                     </div>
                 </div>
             </div>
         );
     }
 
-    handleChange(ev) {
-        //this.props.onChange(ev.target.value);
-    }
+    componentWillReceiveProps(newProps) {
 
-    componentWillReceiveProps(newProps){
-    
     }
 
     handleKeyPress(ev) {
-        const { agent, user, chatBoard} = this.props;
+        const { agent, user, chatBoard } = this.props;
         const { message } = this.state;
         if (ev.which === 13) {
             //const trimmedMessage = this.props.value.trim();

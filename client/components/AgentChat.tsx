@@ -31,7 +31,6 @@ class AgentChatClass extends React.Component<IProps, IState> {
         }
     }
 
-
     static getDerivedStateFromProps(newProps, state){
         const { connectedUsers } = newProps;
         if(state.activeChats.length < maxActiveChats) {
@@ -39,11 +38,11 @@ class AgentChatClass extends React.Component<IProps, IState> {
                 activeChats: connectedUsers.slice(0, maxActiveChats)
             };
         }
+
         return state;
     }
 
     public renderChatHistory(chats, user) {
-        console.log(chats);
         if(!chats) {
             return "";
         }
@@ -68,10 +67,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
                         <div className="chat-message-right clearfix">
 
                             <div className="chat-message-content clearfix">
-
-
                                 <p>{message.message}</p>
-
                             </div>
 
                         </div>

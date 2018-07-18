@@ -50,8 +50,27 @@ p { margin: 0; }
 /* ---------- LIVE-CHAT ---------- */
 
 
+@media only screen and (max-width : 580px) 
+{
+    #live-chat-2 {
+        width: 448px;
+        left: 490px;
+    }
+
+    #live-chat-3 {
+        display: none !important;
+    }
+}
+
+@media only screen and (max-width : 1000px) 
+{
+    #live-chat-3 {
+        display: none !important;
+    }
+}
+
+
 .live-chat {
-    width: 448px;
     background: #ECF2F9;
     border-radius: 15px 15px 0px 0px;
     margin-left: 30px;
@@ -62,14 +81,17 @@ p { margin: 0; }
 }
 
 #live-chat-1 {
+    max-width: 448px;
     left: 10px;
 }
 
 #live-chat-2 {
+    width: 448px;
     left: 490px;
 }
 
 #live-chat-3 {
+    width: 448px;
     left: 940px;
 }
 
@@ -148,7 +170,7 @@ p { margin: 0; }
 }
 
 .chat-history {
-    height: 252px;
+    max-height: 252px;
     overflow-y: scroll;
 }
 .chat-left {
@@ -282,3 +304,4 @@ width: 444px;
     font-style: italic; 
     margin: 0 0 0 80px;
 }
+

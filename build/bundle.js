@@ -138,6 +138,11 @@ exports.CHANGE_USERINFO = 'change-userinfo';
 exports.CREATE_CHAT_BOARD = 'create-chat-board';
 exports.AGENT_ASSIGNED = 'agent-assigned';
 exports.USER_ASSIGNED = 'user-connected';
+exports.CHANGE_ONLINE_COUNT = "change-online-count";
+exports.CHANGE_OFFLINE_COUNT = "change-offline-count";
+exports.SET_USER_ONLINE_STATUS = "set-user-online-status";
+exports.SET_CONNECTED_USER_ONLINE_STATUS = "set-connected-users-online-status";
+exports.SET_CONNECTED_AGENT_ONLINE_STATUS = "set-connected-agent-online-status";
 function setUserInfo(userName, isAgent, id) {
     return {
         type: exports.CHANGE_USERINFO,
@@ -176,6 +181,47 @@ function userConnected(user) {
     };
 }
 exports.userConnected = userConnected;
+function changeOfflineCounter() {
+    return {
+        type: exports.CHANGE_OFFLINE_COUNT,
+    };
+}
+exports.changeOfflineCounter = changeOfflineCounter;
+function changeOnlineCounter() {
+    return {
+        type: exports.CHANGE_ONLINE_COUNT,
+    };
+}
+exports.changeOnlineCounter = changeOnlineCounter;
+function setUserOnlineStatus(status) {
+    return {
+        type: exports.SET_USER_ONLINE_STATUS,
+        payload: {
+            status
+        }
+    };
+}
+exports.setUserOnlineStatus = setUserOnlineStatus;
+function setConnectedUsersOnlineStatus(userId, status) {
+    return {
+        type: exports.SET_CONNECTED_USER_ONLINE_STATUS,
+        payload: {
+            userId,
+            status
+        }
+    };
+}
+exports.setConnectedUsersOnlineStatus = setConnectedUsersOnlineStatus;
+function setAgentOnlineStatus(userId, status) {
+    return {
+        type: exports.SET_CONNECTED_AGENT_ONLINE_STATUS,
+        payload: {
+            userId,
+            status
+        }
+    };
+}
+exports.setAgentOnlineStatus = setAgentOnlineStatus;
 
 
 /***/ }),
@@ -197,7 +243,6 @@ const messageActions_1 = __webpack_require__(/*! ./actions/messageActions */ "./
 function chatMiddleware(store) {
     return next => action => {
         const result = next(action);
-        console.log(store.getState());
         if (socket && action.type === "send-message-to-agent") {
             console.log("Emitting messages");
             socket.emit('message', action.payload.message);
@@ -208,6 +253,14 @@ function chatMiddleware(store) {
                 userName: state.user.name,
                 isAgent: state.user.isAgent,
                 chatBoardId: state.user.id
+            });
+        }
+        if (socket && action.type === "set-user-online-status") {
+            let state = store.getState();
+            socket.emit('user-status-change', {
+                userId: state.user.id,
+                isOnline: state.user.isOnline,
+                isAgent: state.user.isAgent
             });
         }
         return result;
@@ -224,6 +277,13 @@ function default_1(store) {
     });
     socket.on('user-connected', data => {
         store.dispatch(userActions_1.userConnected(data));
+    });
+    socket.on('user-status-change', data => {
+        console.log(data);
+        if (!data.isAgent)
+            store.dispatch(userActions_1.setConnectedUsersOnlineStatus(data.userId, data.isOnline));
+        else
+            store.dispatch(userActions_1.setAgentOnlineStatus(data.userId, data.isOnline));
     });
 }
 exports.default = default_1;
@@ -274,7 +334,6 @@ class AgentChatClass extends React.Component {
         return state;
     }
     renderChatHistory(chats, user) {
-        console.log(chats);
         if (!chats) {
             return "";
         }
@@ -310,7 +369,6 @@ class AgentChatClass extends React.Component {
         });
     }
     render() {
-        console.log(this.state);
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
             this.renderActiveChats.call(this)));
@@ -362,6 +420,7 @@ const react_router_dom_1 = __webpack_require__(/*! react-router-dom */ "./node_m
 const Main_1 = __webpack_require__(/*! ./Main */ "./client/components/Main.tsx");
 const UserNamePopUp_1 = __webpack_require__(/*! ./UserNamePopUp */ "./client/components/UserNamePopUp.tsx");
 const AgentChat_1 = __webpack_require__(/*! ./AgentChat */ "./client/components/AgentChat.tsx");
+const Test1_1 = __webpack_require__(/*! ./Test1 */ "./client/components/Test1.tsx");
 __webpack_require__(/*! ../resources/styles/components/App.scss */ "./client/resources/styles/components/App.scss");
 class App extends React.Component {
     constructor(props) {
@@ -372,6 +431,7 @@ class App extends React.Component {
             React.createElement("div", null,
                 React.createElement(react_router_dom_1.Switch, null,
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/", component: UserNamePopUp_1.UserNamePopUp }),
+                    React.createElement(react_router_dom_1.Route, { exact: true, path: "/test", component: Test1_1.Test1 }),
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/agent/:boardId", component: AgentChat_1.AgentChat }),
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/:boardId", component: Main_1.Main })))));
     }
@@ -394,7 +454,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const messageActions_1 = __webpack_require__(/*! ../actions/messageActions */ "./client/actions/messageActions.ts");
 const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
-__webpack_require__(/*! ../resources/styles/components/Main.scss */ "./client/resources/styles/components/Main.scss");
+__webpack_require__(/*! ../resources/styles/components/Test.scss */ "./client/resources/styles/components/Test.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 class MainClass extends React.Component {
@@ -414,40 +474,35 @@ class MainClass extends React.Component {
             return "";
         }
         const renderChats = chats.map((message, index) => {
-            console.log(message);
             if (message.senderId === user.id)
-                return (React.createElement("div", { key: index, className: "chat-left" },
-                    React.createElement("div", { className: "chat-message-left clearfix" },
-                        React.createElement("div", { className: "chat-message-content clearfix" },
-                            React.createElement("p", null, message.message)))));
+                return (React.createElement("div", { key: index, className: "msg-left" },
+                    React.createElement("p", null, message.message)));
             else
-                return (React.createElement("div", { key: index, className: "chat-right" },
-                    React.createElement("div", { className: "chat-message-right clearfix" },
-                        React.createElement("div", { className: "chat-message-content clearfix" },
-                            React.createElement("p", null, message.message)))));
+                return (React.createElement("div", { key: index, className: "msg-right" },
+                    React.createElement("p", null, message.message)));
         });
         return (React.createElement("div", { className: "chat-history" }, renderChats));
     }
     render() {
         const { agent, user, chatBoard, chats } = this.props;
-        console.log(this.props);
         if (!agent.id) {
             return (React.createElement("div", null, "Waiting for agent....."));
         }
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
-            React.createElement("div", { id: "live-chat-1", className: "live-chat" },
-                React.createElement("header", null,
+            React.createElement("div", { className: "msg_box" },
+                React.createElement("div", { className: "msg_head" },
                     React.createElement("div", { className: "chat-timer" },
                         React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
-                    React.createElement("h4", null, agent.userName)),
-                React.createElement("div", { className: "chat" },
-                    this.renderChatHistory(chats[agent.id], agent, user),
-                    React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
-                    React.createElement("div", { className: "chat-text-area" },
-                        React.createElement("textarea", { value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4, cols: 50 }))))));
-    }
-    handleChange(ev) {
+                    React.createElement("h4", null,
+                        agent.userName,
+                        " ",
+                        agent.isOnline)),
+                React.createElement("div", { className: "msg_wrap" },
+                    React.createElement("div", { className: "msg_body" },
+                        React.createElement("div", { className: "msg_push" }, this.renderChatHistory(chats[agent.id], agent, user))),
+                    React.createElement("div", { className: "msg_footer" },
+                        React.createElement("textarea", { className: "msg_input", value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4 }))))));
     }
     componentWillReceiveProps(newProps) {
     }
@@ -477,6 +532,48 @@ const mapStateToProps = state => {
     };
 };
 exports.Main = react_redux_1.connect(mapStateToProps)(MainClass);
+
+
+/***/ }),
+
+/***/ "./client/components/Test1.tsx":
+/*!*************************************!*\
+  !*** ./client/components/Test1.tsx ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+__webpack_require__(/*! ../resources/styles/components/Test.scss */ "./client/resources/styles/components/Test.scss");
+class Test1 extends React.Component {
+    render() {
+        return (React.createElement("div", { className: "msg_box" },
+            React.createElement("div", { className: "msg_head" },
+                React.createElement("div", { className: "chat-timer" },
+                    React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
+                React.createElement("h4", null, "Swapnil")),
+            React.createElement("div", { className: "msg_wrap" },
+                React.createElement("div", { className: "msg_body" },
+                    React.createElement("div", { className: "msg_push" },
+                        React.createElement("div", { className: "msg-left" }, "left"),
+                        React.createElement("div", { className: "msg-right" }, "right"),
+                        React.createElement("div", { className: "msg-left" }, "left"),
+                        React.createElement("div", { className: "msg-right" }, "right"),
+                        React.createElement("div", { className: "msg-left" }, "left"),
+                        React.createElement("div", { className: "msg-right" }, "right"),
+                        React.createElement("div", { className: "msg-right" }, "right"),
+                        React.createElement("div", { className: "msg-left" }, "left"),
+                        React.createElement("div", { className: "msg-right" }, "right"))),
+                React.createElement("div", { className: "msg_footer" },
+                    React.createElement("textarea", { className: "msg_input", rows: 4 })),
+                " \t"),
+            " \t"));
+    }
+}
+exports.Test1 = Test1;
 
 
 /***/ }),
@@ -570,18 +667,92 @@ exports.UserNamePopUp = UserNamePopUp;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 __webpack_require__(/*! ../../resources/styles/components/common/Header.scss */ "./client/resources/styles/components/common/Header.scss");
-class Header extends React.Component {
+const userActions_1 = __webpack_require__(/*! ../../actions/userActions */ "./client/actions/userActions.ts");
+class HeaderClass extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    formatSeconds(totalSeconds) {
+        let seconds = totalSeconds % 60;
+        let minutes = Math.floor(totalSeconds / 60);
+        let secondsString = seconds.toString();
+        let minuteString = minutes.toString();
+        if (seconds < 10) {
+            secondsString = '0' + secondsString;
+        }
+        if (minutes < 10) {
+            minuteString = '0' + minuteString;
+        }
+        return '00:' + minuteString + ':' + seconds;
+    }
+    componentDidMount() {
+        console.log(this.props.user.isOnline);
+        if (this.props.user.isOnline) {
+            this.startOnlineTimer();
+            clearInterval(this.offlinetimer);
+        }
+        else {
+            this.startOfflineTimer();
+            clearInterval(this.ontimer);
+        }
+    }
+    componentWillUnmount() {
+        clearInterval(this.ontimer);
+        clearInterval(this.offlinetimer);
+    }
+    startOnlineTimer() {
+        this.ontimer = setInterval(() => {
+            this.props.dispatch(userActions_1.changeOnlineCounter());
+        }, 1000);
+    }
+    startOfflineTimer() {
+        this.offlinetimer = setInterval(() => {
+            this.props.dispatch(userActions_1.changeOfflineCounter());
+        }, 1000);
+    }
+    changeStatusChange(event) {
+        const status = event.target.value;
+        if (status.toLowerCase() === "online") {
+            this.startOnlineTimer();
+            clearInterval(this.offlinetimer);
+            this.props.dispatch(userActions_1.setUserOnlineStatus(true));
+        }
+        else {
+            this.startOfflineTimer();
+            clearInterval(this.ontimer);
+            this.props.dispatch(userActions_1.setUserOnlineStatus(false));
+        }
+    }
     render() {
+        const { onlineCount, offlineCount } = this.props.user;
         return (React.createElement("div", { className: "header" },
-            React.createElement("a", { href: "#default", className: "logo" }, "CompanyLogo"),
-            React.createElement("div", { className: "header-right" },
-                React.createElement("a", { className: "active", href: "#home" }, "Home"),
-                React.createElement("a", { href: "#contact" }, "Contact"),
-                React.createElement("a", { href: "#about" }, "About"))));
+            React.createElement("a", { href: "#default", className: "logo" }, "Front End Challenge"),
+            React.createElement("div", { className: "headerrightitems" },
+                React.createElement("div", { className: "selectWrapper" },
+                    React.createElement("select", { className: "selectBox", onChange: this.changeStatusChange.bind(this) },
+                        React.createElement("option", null, "Online"),
+                        React.createElement("option", null, "Offline"))),
+                React.createElement("div", { className: "headertimers12" },
+                    React.createElement("div", { className: "header-timer-divs" },
+                        React.createElement("div", null,
+                            "AWAY - ",
+                            this.formatSeconds(offlineCount),
+                            " "),
+                        React.createElement("div", null,
+                            " ONLINE - ",
+                            this.formatSeconds(onlineCount),
+                            " "))))));
     }
 }
-exports.Header = Header;
+exports.HeaderClass = HeaderClass;
+const mapStateToProps = state => {
+    return {
+        user: state.user
+    };
+};
+exports.Header = react_redux_1.connect(mapStateToProps)(HeaderClass);
 
 
 /***/ }),
@@ -607,12 +778,16 @@ const store_1 = __webpack_require__(/*! ./store */ "./client/store.ts");
 const store = store_1.configure({
     agent: {
         name: "",
-        id: ""
+        id: "",
+        isOnline: false,
     },
     user: {
         name: "",
         isAgent: false,
-        id: ""
+        id: "",
+        isOnline: false,
+        onlineCount: 0,
+        offlineCount: 0
     },
     chatBoard: {
         chatBoardId: ""
@@ -655,12 +830,16 @@ exports.default = {};
 Object.defineProperty(exports, "__esModule", { value: true });
 const agent = {
     name: "",
-    id: false
+    id: false,
+    isOnline: false,
 };
 exports.default = (state = agent, action) => {
     switch (action.type) {
         case 'agent-assigned':
             return action.payload.agent;
+        case 'set-connected-agent-online-status':
+            console.log(Object.assign({}, state, { isOnline: action.payload.status }));
+            return Object.assign({}, state, { isOnline: action.payload.status });
         default:
             return state;
     }
@@ -713,14 +892,14 @@ exports.default = (state = chats, action) => {
             let messages = state[receiverId];
             if (!messages) {
                 state[receiverId] = [action.payload.message];
-                return Object.create(state);
+                return Object.assign({}, state);
             }
             else {
                 state[receiverId] = [
                     ...state[receiverId],
                     action.payload.message
                 ];
-                return Object.create(state);
+                return Object.assign({}, state);
             }
             ;
         case 'message-received':
@@ -728,14 +907,14 @@ exports.default = (state = chats, action) => {
             let msgs = state[senderId];
             if (!msgs) {
                 state[senderId] = [action.payload.message];
-                return Object.create(state);
+                return Object.assign({}, state);
             }
             else {
                 state[senderId] = [
                     ...state[senderId],
                     action.payload.message
                 ];
-                return Object.create(Object.create(state));
+                return Object.assign({}, state);
             }
         default:
             return state;
@@ -758,10 +937,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = (state = [], action) => {
     switch (action.type) {
         case 'user-connected':
+            console.log(...state, action.payload.user);
             return [
                 ...state,
                 action.payload.user
             ];
+        case 'set-connected-users-online-status':
+            console.log(state);
+            const { userId, status } = action.payload;
+            console.log(state.map(user => user.id === userId ? Object.assign({}, user, { isOnline: status }) : user));
+            return state.map(user => user.id === userId ? Object.assign({}, user, { isOnline: status }) : user);
         default:
             return state;
     }
@@ -782,12 +967,22 @@ exports.default = (state = [], action) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 const userName = {
     name: "",
-    isAgent: false
+    isAgent: false,
+    id: "",
+    isOnline: false,
+    onlineCount: 0,
+    offlineCount: 0
 };
 exports.default = (state = userName, action) => {
     switch (action.type) {
         case 'change-userinfo':
-            return Object.assign({}, state, { name: action.payload.userName, isAgent: action.payload.isAgent, id: action.payload.id });
+            return Object.assign({}, state, { name: action.payload.userName, isAgent: action.payload.isAgent, id: action.payload.id, isOnline: true, onlineCount: 0, offlineCount: 0 });
+        case 'change-offline-count':
+            return Object.assign({}, state, { offlineCount: state.offlineCount + 1 });
+        case 'change-online-count':
+            return Object.assign({}, state, { onlineCount: state.onlineCount + 1 });
+        case 'set-user-online-status':
+            return Object.assign({}, state, { isOnline: action.payload.status });
         default:
             return state;
     }
@@ -835,6 +1030,36 @@ if(false) {}
 
 
 var content = __webpack_require__(/*! !../../../../node_modules/css-loader!../../../../node_modules/sass-loader/lib/loader.js!./Main.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Main.scss");
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(/*! ../../../../node_modules/style-loader/lib/addStyles.js */ "./node_modules/style-loader/lib/addStyles.js")(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {}
+
+/***/ }),
+
+/***/ "./client/resources/styles/components/Test.scss":
+/*!******************************************************!*\
+  !*** ./client/resources/styles/components/Test.scss ***!
+  \******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(/*! !../../../../node_modules/css-loader!../../../../node_modules/sass-loader/lib/loader.js!./Test.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Test.scss");
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -3325,7 +3550,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "body {\n  width: 1300px;\n  overflow-x: scroll; }\n", ""]);
+exports.push([module.i, "body {\n  background-color: F9FAFE; }\n", ""]);
 
 // exports
 
@@ -3344,7 +3569,26 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "a {\n  text-decoration: none; }\n\nfieldset {\n  border: 0;\n  margin: 0;\n  padding: 0; }\n\nh4, h5 {\n  line-height: 1.5em;\n  margin: 0; }\n\nhr {\n  background: #e9e9e9;\n  border: 0;\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n  height: 1px;\n  margin: 0;\n  min-height: 1px; }\n\nimg {\n  border: 0;\n  display: block;\n  height: auto;\n  max-width: 100%; }\n\ninput {\n  border: 0;\n  color: inherit;\n  font-family: inherit;\n  font-size: 100%;\n  line-height: normal;\n  margin: 0; }\n\np {\n  margin: 0; }\n\n.clearfix {\n  *zoom: 1; }\n\n/* For IE 6/7 */\n.clearfix:before, .clearfix:after {\n  content: \"\";\n  display: table; }\n\n.clearfix:after {\n  clear: both; }\n\n/* ---------- LIVE-CHAT ---------- */\n.live-chat {\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 15px 15px 0px 0px;\n  margin-left: 30px;\n  margin-right: 30px;\n  bottom: 0;\n  position: fixed; }\n\n#live-chat-1 {\n  left: 10px; }\n\n#live-chat-2 {\n  left: 490px; }\n\n#live-chat-3 {\n  left: 940px; }\n\n.live-chat header {\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  display: table;\n  border-bottom: 1px solid #D4D9DF; }\n\n.live-chat h4 {\n  font-size: 25px;\n  font-weight: 100;\n  display: table-cell;\n  text-align: center;\n  vertical-align: middle;\n  width: 100%;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black; }\n\n.live-chat h5 {\n  font-size: 10px; }\n\n.live-chat form {\n  padding: 24px; }\n\n.live-chat input[type=\"text\"] {\n  border: 1px solid #ccc;\n  border-radius: 3px;\n  padding: 8px;\n  outline: none;\n  width: 234px; }\n\n.chat-message-counter {\n  background: #e62727;\n  border: 1px solid #fff;\n  border-radius: 50%;\n  display: none;\n  font-size: 12px;\n  font-weight: bold;\n  height: 28px;\n  left: 0;\n  line-height: 28px;\n  margin: -15px 0 0 -15px;\n  position: absolute;\n  text-align: center;\n  top: 0;\n  width: 28px; }\n\n.chat-close {\n  background: #1b2126;\n  border-radius: 50%;\n  color: #fff;\n  display: block;\n  float: right;\n  font-size: 10px;\n  height: 16px;\n  line-height: 16px;\n  margin: 2px 0 0 0;\n  text-align: center;\n  width: 16px; }\n\n.chat {\n  background: #ECF2F9; }\n\n.chat-history {\n  height: 252px;\n  overflow-y: scroll; }\n\n.chat-left {\n  width: 100%; }\n\n.chat-right {\n  width: 100%; }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n\n.chat-timer h4 {\n  display: table-cell;\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black; }\n\n.chat-message-left {\n  float: left;\n  background: white;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-left: 15px;\n  margin-top: 5px; }\n\n#live-chat-1 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #CB6080;\n  color: white; }\n\n#live-chat-2 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #0AA693;\n  color: white; }\n\n#live-chat-3 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #966AB8;\n  color: white; }\n\n.chat-time-left {\n  float: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.chat-time-right {\n  float: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.chat-text-area textarea {\n  width: 448px;\n  height: auto;\n  background: #F9FAFE;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  padding: 0px;\n  width: 444px; }\n\n.chat-feedback {\n  font-style: italic;\n  margin: 0 0 0 80px; }\n", ""]);
+exports.push([module.i, "a {\n  text-decoration: none; }\n\nfieldset {\n  border: 0;\n  margin: 0;\n  padding: 0; }\n\nh4, h5 {\n  line-height: 1.5em;\n  margin: 0; }\n\nhr {\n  background: #e9e9e9;\n  border: 0;\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n  height: 1px;\n  margin: 0;\n  min-height: 1px; }\n\nimg {\n  border: 0;\n  display: block;\n  height: auto;\n  max-width: 100%; }\n\ninput {\n  border: 0;\n  color: inherit;\n  font-family: inherit;\n  font-size: 100%;\n  line-height: normal;\n  margin: 0; }\n\np {\n  margin: 0; }\n\n.clearfix {\n  *zoom: 1; }\n\n/* For IE 6/7 */\n.clearfix:before, .clearfix:after {\n  content: \"\";\n  display: table; }\n\n.clearfix:after {\n  clear: both; }\n\n/* ---------- LIVE-CHAT ---------- */\n@media only screen and (max-width: 580px) {\n  #live-chat-2 {\n    width: 448px;\n    left: 490px; }\n  #live-chat-3 {\n    display: none !important; } }\n\n@media only screen and (max-width: 1000px) {\n  #live-chat-3 {\n    display: none !important; } }\n\n.live-chat {\n  background: #ECF2F9;\n  border-radius: 15px 15px 0px 0px;\n  margin-left: 30px;\n  margin-right: 30px;\n  bottom: 0;\n  position: fixed; }\n\n#live-chat-1 {\n  max-width: 448px;\n  left: 10px; }\n\n#live-chat-2 {\n  width: 448px;\n  left: 490px; }\n\n#live-chat-3 {\n  width: 448px;\n  left: 940px; }\n\n.live-chat header {\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  display: table;\n  border-bottom: 1px solid #D4D9DF; }\n\n.live-chat h4 {\n  font-size: 25px;\n  font-weight: 100;\n  display: table-cell;\n  text-align: center;\n  vertical-align: middle;\n  width: 100%;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black; }\n\n.live-chat h5 {\n  font-size: 10px; }\n\n.live-chat form {\n  padding: 24px; }\n\n.live-chat input[type=\"text\"] {\n  border: 1px solid #ccc;\n  border-radius: 3px;\n  padding: 8px;\n  outline: none;\n  width: 234px; }\n\n.chat-message-counter {\n  background: #e62727;\n  border: 1px solid #fff;\n  border-radius: 50%;\n  display: none;\n  font-size: 12px;\n  font-weight: bold;\n  height: 28px;\n  left: 0;\n  line-height: 28px;\n  margin: -15px 0 0 -15px;\n  position: absolute;\n  text-align: center;\n  top: 0;\n  width: 28px; }\n\n.chat-close {\n  background: #1b2126;\n  border-radius: 50%;\n  color: #fff;\n  display: block;\n  float: right;\n  font-size: 10px;\n  height: 16px;\n  line-height: 16px;\n  margin: 2px 0 0 0;\n  text-align: center;\n  width: 16px; }\n\n.chat {\n  background: #ECF2F9; }\n\n.chat-history {\n  max-height: 252px;\n  overflow-y: scroll; }\n\n.chat-left {\n  width: 100%; }\n\n.chat-right {\n  width: 100%; }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n\n.chat-timer h4 {\n  display: table-cell;\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black; }\n\n.chat-message-left {\n  float: left;\n  background: white;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-left: 15px;\n  margin-top: 5px; }\n\n#live-chat-1 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #CB6080;\n  color: white; }\n\n#live-chat-2 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #0AA693;\n  color: white; }\n\n#live-chat-3 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #966AB8;\n  color: white; }\n\n.chat-time-left {\n  float: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.chat-time-right {\n  float: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.chat-text-area textarea {\n  width: 448px;\n  height: auto;\n  background: #F9FAFE;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  padding: 0px;\n  width: 444px; }\n\n.chat-feedback {\n  font-style: italic;\n  margin: 0 0 0 80px; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Test.scss":
+/*!*************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Test.scss ***!
+  \*************************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-loader/lib/css-base.js */ "./node_modules/css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, ".msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: white;\n  border-radius: 5px 5px 0px 0px;\n  left: 15px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center; }\n\n.msg_body {\n  background: white;\n  height: 200px;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  background: #d4e7fa;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  background: #CB6080;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
 
 // exports
 
@@ -3382,7 +3626,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, "ul.menu-list {\n  display: flex;\n  margin: 0;\n  padding: 0 30px;\n  background: black;\n  list-style: none; }\n  ul.menu-list > li {\n    padding: 0 4px;\n    margin: 13px 0 9px; }\n    ul.menu-list > li a,\n    ul.menu-list > li div {\n      float: left;\n      color: white;\n      line-height: 16px; }\n    ul.menu-list > li a,\n    ul.menu-list > li a:hover {\n      cursor: pointer;\n      text-decoration: none; }\n    ul.menu-list > li.title {\n      font-weight: bold; }\n    ul.menu-list > li.selected > a {\n      font-weight: bold;\n      color: blue; }\n    ul.menu-list > li.separated {\n      border-left: 1px solid #3d526c;\n      padding-left: 9px;\n      margin-left: 9px; }\n    ul.menu-list > li.ml-auto {\n      margin-left: auto; }\n\ndiv.header-logo {\n  background-size: auto;\n  background-repeat: no-repeat;\n  background-position: center;\n  height: 20px;\n  width: 50px;\n  color: transparent; }\n\nselect.status {\n  margin-top: 10px;\n  background: #F9FAFE;\n  border: 2px solid #A3ABB3;\n  border-radius: 15px; }\n  select.status select.status:hover {\n    background: #E7EDF3; }\n\n.header {\n  overflow: hidden;\n  background-color: #f1f1f1;\n  padding: 20px 10px; }\n\n.header a {\n  float: left;\n  color: black;\n  text-align: center;\n  padding: 12px;\n  text-decoration: none;\n  font-size: 18px;\n  line-height: 25px;\n  border-radius: 4px; }\n\n.header a.logo {\n  font-size: 25px;\n  font-weight: bold; }\n\n.header a:hover {\n  background-color: #ddd;\n  color: black; }\n\n.header a.active {\n  background-color: dodgerblue;\n  color: white; }\n\n.header-right {\n  float: right; }\n\n@media screen and (max-width: 500px) {\n  .header a {\n    float: none;\n    display: block;\n    text-align: left; }\n  .header-right {\n    float: none; } }\n", ""]);
+exports.push([module.i, "ul.menu-list {\n  display: flex;\n  margin: 0;\n  padding: 0 30px;\n  background: black;\n  list-style: none; }\n  ul.menu-list > li {\n    padding: 0 4px;\n    margin: 13px 0 9px; }\n    ul.menu-list > li a,\n    ul.menu-list > li div {\n      float: left;\n      color: white;\n      line-height: 16px; }\n    ul.menu-list > li a,\n    ul.menu-list > li a:hover {\n      cursor: pointer;\n      text-decoration: none; }\n    ul.menu-list > li.title {\n      font-weight: bold; }\n    ul.menu-list > li.selected > a {\n      font-weight: bold;\n      color: blue; }\n    ul.menu-list > li.separated {\n      border-left: 1px solid #3d526c;\n      padding-left: 9px;\n      margin-left: 9px; }\n    ul.menu-list > li.ml-auto {\n      margin-left: auto; }\n\ndiv.header-logo {\n  background-size: auto;\n  background-repeat: no-repeat;\n  background-position: center;\n  height: 20px;\n  width: 50px;\n  color: transparent; }\n\nselect.status {\n  margin-top: 10px;\n  background: #F9FAFE;\n  border: 2px solid #A3ABB3;\n  border-radius: 15px; }\n  select.status select.status:hover {\n    background: #E7EDF3; }\n\n.header {\n  overflow: hidden; }\n\n.header a {\n  float: left;\n  color: black;\n  text-align: center;\n  padding: 12px;\n  text-decoration: none;\n  font-size: 18px;\n  line-height: 25px;\n  border-radius: 4px; }\n\n.header a.logo {\n  font-size: 25px;\n  font-weight: bold; }\n\n.header a:hover {\n  background-color: #ddd;\n  color: black; }\n\n.header a.active {\n  background-color: dodgerblue;\n  color: white; }\n\n.header-right {\n  float: right; }\n\n@media screen and (max-width: 500px) {\n  .header a {\n    float: none;\n    display: block;\n    text-align: left; }\n  .header-right {\n    float: none; } }\n\n.headerrightitems {\n  padding: 15px; }\n\n.headertimers12 {\n  background: #cccccc;\n  border: 1px solid #cccccc;\n  width: 300px;\n  overflow: hidden;\n  float: right;\n  border-radius: 15px; }\n\n.headertimers12 .header-timer-divs {\n  display: flex; }\n\n.headertimers12 .header-timer-divs div:first-child {\n  border-right: 1px solid grey; }\n\n.headertimers12 .header-timer-divs div {\n  width: 50%;\n  padding-left: 5%; }\n\n.selectWrapper {\n  float: right;\n  border-radius: 36px;\n  overflow: hidden;\n  background: #cccccc;\n  border: 1px solid #cccccc; }\n\n.selectBox {\n  width: 140px;\n  border: 0px;\n  outline: none; }\n", ""]);
 
 // exports
 

@@ -1,12 +1,11 @@
 import * as io from 'socket.io-client';
  
 var socket = null;
-import { agentAssigned, userConnected } from "./actions/userActions";
+import { agentAssigned, userConnected, setConnectedUsersOnlineStatus, setAgentOnlineStatus } from "./actions/userActions";
 import { messageReceive } from "./actions/messageActions";
 export function chatMiddleware(store) {
   return next => action => {
     const result = next(action);
-    console.log(store.getState());
     if (socket && action.type === "send-message-to-agent") {
       //let messages = store.getState().messages;
         console.log("Emitting messages");
@@ -20,7 +19,15 @@ export function chatMiddleware(store) {
               isAgent: state.user.isAgent,
               chatBoardId: state.user.id
           });
-      }
+      } 
+      if (socket && action.type === "set-user-online-status") {
+        let state = store.getState();
+        socket.emit('user-status-change', {
+            userId: state.user.id,
+            isOnline: state.user.isOnline,
+            isAgent: state.user.isAgent
+        });
+    }
  
     return result;
   };
@@ -39,5 +46,13 @@ export default function (store) {
 
     socket.on('user-connected', data => {
         store.dispatch(userConnected(data));
+    });
+
+    socket.on('user-status-change', data => {
+        console.log(data);
+        if(!data.isAgent) 
+            store.dispatch(setConnectedUsersOnlineStatus(data.userId, data.isOnline));
+        else 
+            store.dispatch(setAgentOnlineStatus(data.userId, data.isOnline));
     });
 }

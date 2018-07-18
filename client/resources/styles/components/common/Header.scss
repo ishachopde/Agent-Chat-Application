@@ -57,8 +57,6 @@ select.status {
 
 .header {
     overflow: hidden;
-    background-color: #f1f1f1;
-    padding: 20px 10px;
 }
 
 .header a {
@@ -101,3 +99,40 @@ select.status {
         float: none;
     }
 }
+.headerrightitems {
+    padding: 15px;
+}
+.headertimers12 {
+    background:#cccccc;
+    border:1px solid #cccccc;
+    width: 300px;
+    overflow:hidden;
+    float: right;
+    border-radius: 15px;
+}
+.headertimers12 .header-timer-divs {
+    display: flex;
+}
+
+.headertimers12 .header-timer-divs div:first-child {
+    border-right: 1px solid grey;
+}
+
+.headertimers12 .header-timer-divs div {
+    width: 50%;
+    padding-left: 5%;
+}
+
+.selectWrapper{
+    float: right;
+    border-radius:36px;
+    //display:inline-block;
+    overflow:hidden;
+    background:#cccccc;
+    border:1px solid #cccccc;
+  }
+  .selectBox{
+    width:140px;
+    border:0px;
+    outline:none;
+  }

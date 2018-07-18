@@ -12,12 +12,16 @@ import { configure } from './store';
 const store = configure({
     agent: {
         name: "",
-        id: ""
+        id: "",
+        isOnline: false,
     },
     user : {
         name: "",
         isAgent: false,
-        id: ""
+        id: "",
+        isOnline: false,
+        onlineCount: 0,
+        offlineCount: 0
     },
     chatBoard: {
         chatBoardId: ""

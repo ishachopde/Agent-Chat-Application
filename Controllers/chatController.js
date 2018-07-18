@@ -17,25 +17,35 @@ module.exports = BaseController.extend ({
             console.log(data);
         });
 
-        socket.on('create-board', function(data) {
+        socket.on('user-status-change', (user) => {
+            const { userId, isOnline, isAgent} = user;
+            let connectedUsers = []
+            connectedUsers = (isAgent) ? agents[userId].connectedUsers : [userPool[userId].agent.id]
+            
+            connectedUsers.forEach(connectedUser => {
+                userPool[connectedUser].socket.emit("user-status-change", user);
+            });
+        })
 
-            console.log(data);
+        socket.on('create-board', function(data) {
             userPool[data.chatBoardId] = {
                 socket,
                 userName: data.userName,
-                id: data.chatBoardId
+                id: data.chatBoardId,
             };
 
             if(data.isAgent) {
                 agents[data.chatBoardId] = {
                     socket,
                     userName: data.userName,
-                    id: data.chatBoardId
+                    id: data.chatBoardId,
+                    connectedUsers: []
                 };
                 console.log(JSON.stringify(agents[data.chatBoardId].userName));
             } else {
 
-                // Get available agent.
+                // Get available agent. Can be done separately, but for this exercise
+                // assuption is agent is running before we run the user.
                 const randomAgent = function (obj) {
                     var keys = Object.keys(obj)
                     return obj[keys[ keys.length * Math.random() << 0]];
@@ -44,19 +54,33 @@ module.exports = BaseController.extend ({
 
                 //
                 const agent = randomAgent(agents);
-                console.log(agent);
 
+                // Store user information in UserPool
+                userPool[data.chatBoardId] = {
+                    ...userPool[data.chatBoardId],
+                    agent: agent
+                };
+                
                 if(agent) {
+                    agents[agent.id] = {
+                        ...agents[agent.id],
+                        connectedUsers: [
+                            ...agents[agent.id].connectedUsers,
+                            data.chatBoardId // Add new user to the agent connected user list.
+                        ]
+                    }
                     // Notify user agent is assigned.
                     socket.emit('agent-connected', {
                         userName: agent.userName,
-                        id: agent.id
+                        id: agent.id,
+                        isOnline: true
                     });
 
                     // Notify agent user is assigned.
                     agent.socket.emit('user-connected', {
                         name: data.userName,
-                        id: data.chatBoardId
+                        id: data.chatBoardId,
+                        isOnine: true
                     })
                 }
 
