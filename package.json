@@ -28,6 +28,7 @@
         "morgan": "~1.7.0",
         "node-sass": "^4.9.0",
         "react": "16.4.1",
+        "react-autosuggest": "^9.3.4",
         "react-dom": "16.4.1",
         "react-modal": "^3.5.1",
         "react-redux": "^5.0.7",

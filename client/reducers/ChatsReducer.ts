@@ -4,7 +4,7 @@ const chats = {
 };
 export default (state = chats, action) => {
     switch(action.type) {
-        case 'send-message-to-agent':
+        case 'message-sent':
             const receiverId = action.payload.message.receiverId;
             let messages = state[receiverId];
 

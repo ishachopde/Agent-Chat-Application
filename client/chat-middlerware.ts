@@ -6,7 +6,7 @@ import { messageReceive } from "./actions/messageActions";
 export function chatMiddleware(store) {
   return next => action => {
     const result = next(action);
-    if (socket && action.type === "send-message-to-agent") {
+    if (socket && action.type === "message-sent") {
       //let messages = store.getState().messages;
         console.log("Emitting messages");
         socket.emit('message', action.payload.message);

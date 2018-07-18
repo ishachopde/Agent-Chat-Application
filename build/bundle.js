@@ -97,7 +97,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UPDATE_MESSAGE = 'update-message';
-exports.SEND_MESSAGE_TO_AGENT = 'send-message-to-agent';
+exports.SEND_MESSAGE_TO_AGENT = 'message-sent';
 exports.MESSAGE_RECEIVED = 'message-received';
 function updateMessage(message) {
     return { type: exports.UPDATE_MESSAGE, message };
@@ -143,6 +143,7 @@ exports.CHANGE_OFFLINE_COUNT = "change-offline-count";
 exports.SET_USER_ONLINE_STATUS = "set-user-online-status";
 exports.SET_CONNECTED_USER_ONLINE_STATUS = "set-connected-users-online-status";
 exports.SET_CONNECTED_AGENT_ONLINE_STATUS = "set-connected-agent-online-status";
+exports.CHANGE_LAST_MESSAGE_RECEIVED_COUNTER = "change-last-message-counter";
 function setUserInfo(userName, isAgent, id) {
     return {
         type: exports.CHANGE_USERINFO,
@@ -222,6 +223,15 @@ function setAgentOnlineStatus(userId, status) {
     };
 }
 exports.setAgentOnlineStatus = setAgentOnlineStatus;
+function changeLastMessageReceivedCounter(userId) {
+    return {
+        type: exports.CHANGE_LAST_MESSAGE_RECEIVED_COUNTER,
+        payload: {
+            userId
+        }
+    };
+}
+exports.changeLastMessageReceivedCounter = changeLastMessageReceivedCounter;
 
 
 /***/ }),
@@ -243,7 +253,7 @@ const messageActions_1 = __webpack_require__(/*! ./actions/messageActions */ "./
 function chatMiddleware(store) {
     return next => action => {
         const result = next(action);
-        if (socket && action.type === "send-message-to-agent") {
+        if (socket && action.type === "message-sent") {
             console.log("Emitting messages");
             socket.emit('message', action.payload.message);
         }
@@ -303,14 +313,26 @@ exports.default = default_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const messageActions_1 = __webpack_require__(/*! ../actions/messageActions */ "./client/actions/messageActions.ts");
+const userActions_1 = __webpack_require__(/*! ../actions/userActions */ "./client/actions/userActions.ts");
 const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
 __webpack_require__(/*! ../resources/styles/components/Main.scss */ "./client/resources/styles/components/Main.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 const maxActiveChats = 3;
+const languages = [
+    {
+        name: 'C',
+        year: 1972
+    },
+    {
+        name: 'Elm',
+        year: 2012
+    }
+];
 class AgentChatClass extends React.Component {
     constructor(props) {
         super(props);
+        this.lastMessageTimers = {};
         this.handleMessageChange = (e, userId) => {
             const inputMessages = this.state.inputMessages;
             inputMessages[userId] = e.target.value;
@@ -321,7 +343,7 @@ class AgentChatClass extends React.Component {
         const { connectedUsers } = this.props;
         this.state = {
             activeChats: [],
-            inputMessages: {}
+            inputMessages: {},
         };
     }
     static getDerivedStateFromProps(newProps, state) {
@@ -351,21 +373,48 @@ class AgentChatClass extends React.Component {
         });
         return (React.createElement("div", { className: "chat-history" }, renderChats));
     }
+    startMessageReceivedTimer(id) {
+        if (!this.lastMessageTimers.hasOwnProperty(id)) {
+            console.log(id);
+            this.lastMessageTimers[id] = setInterval(() => {
+                this.props.dispatch(userActions_1.changeLastMessageReceivedCounter(id));
+            }, 1000);
+        }
+    }
     renderActiveChats() {
         const { chats, user } = this.props;
         const { inputMessages } = this.state;
         return this.state.activeChats.map((activeChat, index) => {
             const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
+            if (activeChat.isNewMessage) {
+                this.startMessageReceivedTimer(activeChat.id);
+            }
+            else {
+                if (this.lastMessageTimers.hasOwnProperty(activeChat.id)) {
+                    console.log(activeChat.id);
+                    console.log("Cleared");
+                    clearInterval(this.lastMessageTimers[activeChat.id]);
+                    delete this.lastMessageTimers[activeChat.id];
+                }
+            }
             return (React.createElement("div", { key: index, id: `live-chat-${index + 1}`, className: "live-chat" },
                 React.createElement("header", null,
                     React.createElement("div", { className: "chat-timer" },
-                        React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
+                        React.createElement("span", { className: "chat-timer-text" },
+                            " ",
+                            activeChat.lastMessageTimer,
+                            "s")),
                     React.createElement("h4", null, activeChat.name)),
                 React.createElement("div", { className: "chat" },
                     this.renderChatHistory(chats[activeChat.id], user),
                     React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
                     React.createElement("div", { className: "chat-text-area" },
                         React.createElement("textarea", { value: inputMessage, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4, cols: 50 })))));
+        });
+    }
+    componentWillUnmount() {
+        Object.keys(this.lastMessageTimers).forEach((key) => {
+            clearInterval(this.lastMessageTimers[key]);
         });
     }
     render() {
@@ -887,7 +936,7 @@ const uuidv4 = __webpack_require__(/*! uuid/v4 */ "./node_modules/uuid/v4.js");
 const chats = {};
 exports.default = (state = chats, action) => {
     switch (action.type) {
-        case 'send-message-to-agent':
+        case 'message-sent':
             const receiverId = action.payload.message.receiverId;
             let messages = state[receiverId];
             if (!messages) {
@@ -940,13 +989,23 @@ exports.default = (state = [], action) => {
             console.log(...state, action.payload.user);
             return [
                 ...state,
-                action.payload.user
+                Object.assign({}, action.payload.user, { lastMessageTimer: 0, isNewMessage: false })
             ];
         case 'set-connected-users-online-status':
-            console.log(state);
             const { userId, status } = action.payload;
-            console.log(state.map(user => user.id === userId ? Object.assign({}, user, { isOnline: status }) : user));
             return state.map(user => user.id === userId ? Object.assign({}, user, { isOnline: status }) : user);
+        case 'message-sent':
+            const { receiverId } = action.payload.message;
+            console.log(receiverId);
+            console.log(state.map(user => user.id === receiverId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: false }) : user));
+            return state.map(user => user.id === receiverId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: false }) : user);
+        case 'message-received':
+            console.log(action.payload);
+            const { senderId } = action.payload.message;
+            console.log(state.map(user => user.id === senderId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: true }) : user));
+            return state.map(user => user.id === senderId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: true }) : user);
+        case 'change-last-message-counter':
+            return state.map(user => user.id === action.payload.userId ? Object.assign({}, user, { lastMessageTimer: user.lastMessageTimer + 1 }) : user);
         default:
             return state;
     }

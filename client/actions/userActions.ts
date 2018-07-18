@@ -7,6 +7,7 @@ export const CHANGE_OFFLINE_COUNT = "change-offline-count";
 export const SET_USER_ONLINE_STATUS = "set-user-online-status";
 export const SET_CONNECTED_USER_ONLINE_STATUS = "set-connected-users-online-status";
 export const SET_CONNECTED_AGENT_ONLINE_STATUS = "set-connected-agent-online-status";
+export const CHANGE_LAST_MESSAGE_RECEIVED_COUNTER = "change-last-message-counter";
 export function setUserInfo(userName, isAgent, id) {
     return {
         type: CHANGE_USERINFO,
@@ -81,6 +82,15 @@ export function setAgentOnlineStatus (userId, status) {
         payload: {
             userId,
             status
+        }
+    };
+}
+
+export function changeLastMessageReceivedCounter (userId) {
+    return {
+        type: CHANGE_LAST_MESSAGE_RECEIVED_COUNTER,
+        payload: {
+            userId
         }
     };
 }
