@@ -26,7 +26,13 @@ export default (state = [], action) => {
             console.log(state.map(user => user.id === senderId ? {...user, lastMessageTimer: 0, isNewMessage: true} : user));
             return state.map(user => user.id === senderId ? {...user, lastMessageTimer: 0, isNewMessage: true} : user);
         case 'change-last-message-counter':
-            return state.map(user => user.id === action.payload.userId ? {...user, lastMessageTimer: user.lastMessageTimer + 1} : user);    
+            return state.map(user => user.id === action.payload.userId ? {...user, lastMessageTimer: user.lastMessageTimer + 1} : user);
+            
+        case 'set-active-user': 
+            return [
+                state.find((user) => user.id === action.payload.userId),
+                ...state.filter((user) => user.id !== action.payload.userId)
+        ];
         default:
             return state;
     }

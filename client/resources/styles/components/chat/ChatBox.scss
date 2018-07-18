@@ -3,6 +3,47 @@
 @-webkit-keyframes blink-966AB8 { 50% { border: 2px solid #966AB8; }  }
 @-webkit-keyframes blink-3D9CC4 { 50% { border: 2px solid #3D9CC4; }  }
 
+// @keyframes blink-CB6080 { 50% { border: 2px solid #CB6080; }  }
+// @keyframes blink-0AA693 { 50% { border: 2px solid #0AA693; }  }
+// @keyframes blink-966AB8 { 50% { border: 2px solid #966AB8; }  }
+// @keyframes blink-3D9CC4 { 50% { border: 2px solid #3D9CC4; }  }
+
+div.scrollmenu {
+    overflow: auto;
+    white-space: nowrap;
+  }
+  
+  
+  @keyframes blink-alert { 50% { border: 2px solid #D43245; }  }
+  div.scrollmenu span {
+    display: inline-block;
+    margin: 5px 10px;
+    height: 60px;
+    width: 60px;
+    line-height: 60px;
+    -moz-border-radius: 30px;
+    border-radius: 30px;
+    color: white;
+    text-align: center;
+    font-size: 2em;
+  }
+  
+  div.scrollmenu a {
+    display: inline-block;
+    color: white;
+    text-align: center;
+    padding: 14px;
+    text-decoration: none;
+  }
+  
+  div.scrollmenu a:hover {
+    background-color: #777;
+  }
+  
+  .scrollview-header {
+    margin-left: 10px;
+    font-size: 20px;
+  }
 
  //"#CB6080", "#0AA693", "#966AB8", "#3D9CC4"
 .msg_box{

@@ -144,6 +144,7 @@ exports.SET_USER_ONLINE_STATUS = "set-user-online-status";
 exports.SET_CONNECTED_USER_ONLINE_STATUS = "set-connected-users-online-status";
 exports.SET_CONNECTED_AGENT_ONLINE_STATUS = "set-connected-agent-online-status";
 exports.CHANGE_LAST_MESSAGE_RECEIVED_COUNTER = "change-last-message-counter";
+exports.SET_ACTIVE_USER = "set-active-user";
 function setUserInfo(userName, isAgent, id) {
     return {
         type: exports.CHANGE_USERINFO,
@@ -232,6 +233,15 @@ function changeLastMessageReceivedCounter(userId) {
     };
 }
 exports.changeLastMessageReceivedCounter = changeLastMessageReceivedCounter;
+function setActiveUser(userId) {
+    return {
+        type: exports.SET_ACTIVE_USER,
+        payload: {
+            userId
+        }
+    };
+}
+exports.setActiveUser = setActiveUser;
 
 
 /***/ }),
@@ -325,16 +335,79 @@ const languages = [
         year: 1972
     },
     {
+        name: 'C#',
+        year: 2000
+    },
+    {
+        name: 'C++',
+        year: 1983
+    },
+    {
+        name: 'Clojure',
+        year: 2007
+    },
+    {
         name: 'Elm',
         year: 2012
+    },
+    {
+        name: 'Go',
+        year: 2009
+    },
+    {
+        name: 'Haskell',
+        year: 1990
+    },
+    {
+        name: 'Java',
+        year: 1995
+    },
+    {
+        name: 'Javascript',
+        year: 1995
+    },
+    {
+        name: 'Perl',
+        year: 1987
+    },
+    {
+        name: 'PHP',
+        year: 1995
+    },
+    {
+        name: 'Python',
+        year: 1991
+    },
+    {
+        name: 'Ruby',
+        year: 1995
+    },
+    {
+        name: 'Scala',
+        year: 2003
     }
 ];
+const escapeRegexCharacters = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const getSuggestions = value => {
+    const escapedValue = escapeRegexCharacters(value.trim());
+    if (escapedValue === '') {
+        return [];
+    }
+    const regex = new RegExp('^' + escapedValue, 'i');
+    const suggestions = languages.filter(language => regex.test(language.name));
+    return suggestions;
+};
 class AgentChatClass extends React.Component {
     constructor(props) {
         super(props);
         this.lastMessageTimers = {};
         this.chatWindowWidth = 448;
         this.marginBetweenTwoChatWindows = 10;
+        this.onChange = (event, { newValue, method }) => {
+            this.setState({
+                value: newValue
+            });
+        };
         this.handleMessageChange = (e, userId) => {
             const inputMessages = this.state.inputMessages;
             inputMessages[userId] = e.target.value;
@@ -346,6 +419,8 @@ class AgentChatClass extends React.Component {
         this.state = {
             activeChats: [],
             inputMessages: {},
+            value: '',
+            suggestions: getSuggestions('')
         };
     }
     calculateNumberOfChats(screenWidth) {
@@ -378,11 +453,47 @@ class AgentChatClass extends React.Component {
             }, 1000);
         }
     }
-    renderActiveChats() {
+    getSuggestionValue(suggestion) {
+        if (suggestion.isAddNew) {
+            return this.state.value;
+        }
+        return suggestion.name;
+    }
+    ;
+    renderSuggestion(suggestion) {
+        if (suggestion.isAddNew) {
+            return (React.createElement("span", null,
+                "[+] Add new: ",
+                React.createElement("strong", null, this.state.value)));
+        }
+        return suggestion.name;
+    }
+    ;
+    onSuggestionsFetchRequested({ value }) {
+        this.setState({
+            suggestions: getSuggestions(value)
+        });
+    }
+    ;
+    onSuggestionsClearRequested() {
+        this.setState({
+            suggestions: []
+        });
+    }
+    ;
+    onSuggestionSelected(event, { suggestion }) {
+        console.log(suggestion);
+    }
+    ;
+    renderActiveChats(maxActiveChats, activeChats) {
+        const { value, suggestions } = this.state;
+        const inputProps = {
+            placeholder: "",
+            value,
+            onChange: this.onChange
+        };
         const { chats, user } = this.props;
         const { inputMessages } = this.state;
-        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
-        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
         return activeChats.map((activeChat, index) => {
             const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
             if (activeChat.isNewMessage) {
@@ -397,7 +508,6 @@ class AgentChatClass extends React.Component {
             const left = (index * this.chatWindowWidth) + (index + 1) * this.marginBetweenTwoChatWindows;
             const backgroundColor = backgroundColors[index % maxActiveChats];
             let boxAnimation = "none";
-            console.log(activeChat.isOnline);
             if (activeChat.lastMessageTimer > 60) {
                 boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;
             }
@@ -422,9 +532,30 @@ class AgentChatClass extends React.Component {
         });
     }
     render() {
+        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
+        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
+        const inactiveChats = this.props.connectedUsers.slice(maxActiveChats, this.props.connectedUsers.length);
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
-            this.renderActiveChats.call(this)));
+            this.renderHorizontalOnlineUsers.call(this, maxActiveChats, inactiveChats),
+            this.renderActiveChats.call(this, maxActiveChats, activeChats)));
+    }
+    renderHorizontalOnlineUsers(maxActiveChats, inactiveChats) {
+        return (React.createElement("div", null,
+            React.createElement("div", { className: "scrollview-header" }, "Online Users"),
+            React.createElement("div", { className: "scrollmenu" }, inactiveChats.map((inactiveChat, index) => {
+                const backgroundColor = backgroundColors[index % maxActiveChats];
+                let boxAnimation = "none";
+                if (inactiveChat.lastMessageTimer > 60) {
+                    console.log("Set Animation");
+                    boxAnimation = `blink-alert .5s step-end infinite alternate`;
+                }
+                return (React.createElement("span", { onClick: (ev) => this.setActiveUser.call(this, inactiveChat.id), key: index, style: { background: backgroundColor, animation: boxAnimation } },
+                    React.createElement("div", null, inactiveChat.name.substring(0, 1))));
+            }))));
+    }
+    setActiveUser(userId) {
+        this.props.dispatch(userActions_1.setActiveUser(userId));
     }
     handleKeyPress(ev, senderId, receiverId) {
         const { inputMessages } = this.state;
@@ -987,6 +1118,11 @@ exports.default = (state = [], action) => {
             return state.map(user => user.id === senderId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: true }) : user);
         case 'change-last-message-counter':
             return state.map(user => user.id === action.payload.userId ? Object.assign({}, user, { lastMessageTimer: user.lastMessageTimer + 1 }) : user);
+        case 'set-active-user':
+            return [
+                state.find((user) => user.id === action.payload.userId),
+                ...state.filter((user) => user.id !== action.payload.userId)
+            ];
         default:
             return state;
     }
@@ -3560,7 +3696,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "body {\n  background-color: #F9FAFE; }\n", ""]);
+exports.push([module.i, "body {\n  background-color: #F9FAFE; }\n\n.react-autosuggest__container {\n  position: relative; }\n\n.react-autosuggest__input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.react-autosuggest__input--focused {\n  outline: none; }\n\n.react-autosuggest__input--open {\n  border-bottom-left-radius: 0;\n  border-bottom-right-radius: 0; }\n\n.react-autosuggest__suggestions-container {\n  display: none; }\n\n.react-autosuggest__suggestions-container--open {\n  display: block;\n  position: absolute;\n  bottom: 51px;\n  width: 448px;\n  border: 1px solid #aaa;\n  background-color: #fff;\n  font-family: Helvetica, sans-serif;\n  font-weight: 300;\n  font-size: 16px;\n  border-bottom-left-radius: 4px;\n  border-bottom-right-radius: 4px;\n  z-index: 2; }\n\n.react-autosuggest__suggestions-list {\n  margin: 0;\n  padding: 0;\n  list-style-type: none; }\n\n.react-autosuggest__suggestion {\n  cursor: pointer;\n  padding: 10px 20px; }\n\n.react-autosuggest__suggestion--highlighted {\n  background-color: #ddd; }\n", ""]);
 
 // exports
 
@@ -3598,7 +3734,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 2px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 2px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 2px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 2px solid #3D9CC4; } }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0px 0px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
+exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 2px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 2px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 2px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 2px solid #3D9CC4; } }\n\ndiv.scrollmenu {\n  overflow: auto;\n  white-space: nowrap; }\n\n@keyframes blink-alert {\n  50% {\n    border: 2px solid #D43245; } }\n\ndiv.scrollmenu span {\n  display: inline-block;\n  margin: 5px 10px;\n  height: 60px;\n  width: 60px;\n  line-height: 60px;\n  -moz-border-radius: 30px;\n  border-radius: 30px;\n  color: white;\n  text-align: center;\n  font-size: 2em; }\n\ndiv.scrollmenu a {\n  display: inline-block;\n  color: white;\n  text-align: center;\n  padding: 14px;\n  text-decoration: none; }\n\ndiv.scrollmenu a:hover {\n  background-color: #777; }\n\n.scrollview-header {\n  margin-left: 10px;\n  font-size: 20px; }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0px 0px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
 
 // exports
 

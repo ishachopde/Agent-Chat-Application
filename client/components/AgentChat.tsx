@@ -1,12 +1,12 @@
 import * as React from "react";
 import {sendMessageToAgent } from "../actions/messageActions";
-import { changeLastMessageReceivedCounter } from "../actions/userActions";
+import { changeLastMessageReceivedCounter, setActiveUser } from "../actions/userActions";
 import {getStore} from '../store';
 import "../resources/styles/components/chat/ChatBox.scss";
 import { Footer } from "./common/Footer";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
-import Autosuggest from 'react-autosuggest';
+import * as Autosuggest from 'react-autosuggest';
 
 const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"]
 
@@ -16,10 +16,74 @@ const languages = [
       year: 1972
     },
     {
+      name: 'C#',
+      year: 2000
+    },
+    {
+      name: 'C++',
+      year: 1983
+    },
+    {
+      name: 'Clojure',
+      year: 2007
+    },
+    {
       name: 'Elm',
       year: 2012
+    },
+    {
+      name: 'Go',
+      year: 2009
+    },
+    {
+      name: 'Haskell',
+      year: 1990
+    },
+    {
+      name: 'Java',
+      year: 1995
+    },
+    {
+      name: 'Javascript',
+      year: 1995
+    },
+    {
+      name: 'Perl',
+      year: 1987
+    },
+    {
+      name: 'PHP',
+      year: 1995
+    },
+    {
+      name: 'Python',
+      year: 1991
+    },
+    {
+      name: 'Ruby',
+      year: 1995
+    },
+    {
+      name: 'Scala',
+      year: 2003
     }
   ];
+  
+  // https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions#Using_Special_Characters
+  const escapeRegexCharacters = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  const getSuggestions = value => {
+    const escapedValue = escapeRegexCharacters(value.trim());
+    
+    if (escapedValue === '') {
+      return [];
+    }
+  
+    const regex = new RegExp('^' + escapedValue, 'i');
+    const suggestions = languages.filter(language => regex.test(language.name));
+
+    return suggestions;
+  }
 
 interface IProps {
     user: any,
@@ -32,43 +96,27 @@ interface IProps {
 interface IState {
     activeChats: any;
     inputMessages: any;
-   // value: string
-   // suggestions?
+   value: string
+   suggestions?
 }
 
 class AgentChatClass extends React.Component<IProps, IState> {
-    private onChange;
     private onSuggestionsUpdateRequested;
     private lastMessageTimers = {};
     private chatWindowWidth = 448;
-    private marginBetweenTwoChatWindows = 10;
+    private marginBetweenTwoChatWindows = 12;
     constructor(props: IProps) {
         super(props);
         const { connectedUsers } = this.props;
         this.state = {
                 activeChats: [],
                 inputMessages: {},
-            // value: '',
-            // suggestions: this.getSuggestions('')
+                value: '',
+                suggestions: getSuggestions('')
         }
 
-      //  this.onChange = this.onChange.bind(this);
-      //  this.onSuggestionsUpdateRequested = this.onSuggestionsUpdateRequested.bind(this);
+    
     }
-
-   
-
-    // static getDerivedStateFromProps(newProps, state){
-       
-    //     const maxActiveChats = AgentChatClass.calculateNumberOfChats(window.innerWidth);
-    //     if(state.activeChats.length < maxActiveChats) {
-    //         state = {
-    //             width: window.innerWidth + 'px',
-    //         };
-    //     }
-
-    //     return state;
-    // }
 
     private calculateNumberOfChats(screenWidth) {
         const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
@@ -134,13 +182,60 @@ class AgentChatClass extends React.Component<IProps, IState> {
         }
     }
 
-    renderActiveChats() {
-        const { chats, user } = this.props;
-        const  { inputMessages } = this.state;
-
-        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
-        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
+    onChange = (event, { newValue, method }) => {
+        this.setState({
+          value: newValue
+        });
+      };
+    
+      getSuggestionValue(suggestion) {
+        if (suggestion.isAddNew) {
+          return this.state.value;
+        }
         
+        return suggestion.name;
+      };
+    
+      renderSuggestion(suggestion) {
+        if (suggestion.isAddNew) {
+          return (
+            <span>
+              [+] Add new: <strong>{this.state.value}</strong>
+            </span>
+          );
+        }
+    
+        return suggestion.name;
+      };
+      
+      onSuggestionsFetchRequested ({ value }) {
+        this.setState({
+          suggestions: getSuggestions(value)
+        });
+      };
+    
+      onSuggestionsClearRequested () {
+        this.setState({
+          suggestions: []
+        });
+      };
+    
+      onSuggestionSelected (event, { suggestion }) {
+        console.log(suggestion);
+      };
+
+    renderActiveChats(maxActiveChats, activeChats) {
+        const { value, suggestions } = this.state;
+        const inputProps = {
+          placeholder: "",
+          value,
+          onChange: this.onChange
+        };
+
+
+
+        const { chats, user } = this.props;
+        const  { inputMessages } = this.state;   
         return activeChats.map((activeChat, index) => {
             const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
             if(activeChat.isNewMessage) {
@@ -155,7 +250,6 @@ class AgentChatClass extends React.Component<IProps, IState> {
             const left = (index * this.chatWindowWidth) + (index + 1)  * this.marginBetweenTwoChatWindows;
             const backgroundColor = backgroundColors[index % maxActiveChats];
             let boxAnimation = "none";
-            console.log(activeChat.isOnline);
             // Remind Agent to reply, if haven't replied in one minute.
             if(activeChat.lastMessageTimer > 60) {
                 boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;     
@@ -181,6 +275,18 @@ class AgentChatClass extends React.Component<IProps, IState> {
                             (!activeChat.isOnline) ? "User disconnected" : ""
                         }
                     </div>
+
+                    {/* <Autosuggest 
+                    onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
+        suggestions={suggestions}
+        onSuggestionsFetchRequested={this.onSuggestionsFetchRequested.bind(this)}
+        onSuggestionsClearRequested={this.onSuggestionsClearRequested.bind(this)}
+        getSuggestionValue={this.getSuggestionValue.bind(this)}
+        renderSuggestion={this.renderSuggestion.bind(this)}
+        onSuggestionSelected={this.onSuggestionSelected.bind(this)}
+        inputProps={inputProps} 
+      />
+      <button value="send" /> */}
                     <textarea 
                         value={inputMessage} className="msg_input" disabled={!activeChat.isOnline}
                                 onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
@@ -201,12 +307,46 @@ class AgentChatClass extends React.Component<IProps, IState> {
     }
 
     render() {
+        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
+        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
+        const inactiveChats = this.props.connectedUsers.slice(maxActiveChats, this.props.connectedUsers.length);
         return (
             <div>
                 <Header /> 
-                {this.renderActiveChats.call(this)}
+                {this.renderHorizontalOnlineUsers.call(this, maxActiveChats, inactiveChats)}
+                {this.renderActiveChats.call(this, maxActiveChats, activeChats)}
             </div>
         );
+    }
+
+    private renderHorizontalOnlineUsers(maxActiveChats, inactiveChats) {
+        return (
+            <div>   
+                <div className="scrollview-header">
+                    Online Users
+                    </div> 
+                    <div className="scrollmenu">  
+                        {inactiveChats.map((inactiveChat, index) => {
+                            const backgroundColor = backgroundColors[index % maxActiveChats];
+                            let boxAnimation = "none";
+                            // Remind Agent to reply, if haven't replied in one minute.
+                            if(inactiveChat.lastMessageTimer > 60) {
+                                boxAnimation = `blink-alert .5s step-end infinite alternate`;     
+                            }
+                            return (
+                                <span onClick={(ev) => this.setActiveUser.call(this, inactiveChat.id) } key={index} style={{background: backgroundColor, animation: boxAnimation}}><div>
+                                {inactiveChat.name.substring(0,1)}</div>
+                                </span>
+                                
+                            )
+                        })}
+                    </div>
+            </div>
+        )
+    }
+
+    private setActiveUser(userId) {
+        this.props.dispatch(setActiveUser(userId));
     }
 
     private handleMessageChange = (e, userId) => {
@@ -255,25 +395,6 @@ class AgentChatClass extends React.Component<IProps, IState> {
     }
 
 
-
-    // getSuggestions(value) {
-    //     const inputValue = value.trim().toLowerCase();
-    //     const inputLength = inputValue.length;
-        
-    //     return inputLength === 0 ? [] : languages.filter(lang =>
-    //       lang.name.toLowerCase().slice(0, inputLength) === inputValue
-    //     );
-    //   }
-       
-    //  getSuggestionValue(suggestion) { // when suggestion selected, this function tells
-    //     return suggestion.name;                 // what should be the value of the input
-    //   }
-       
-    // renderSuggestion(suggestion) {
-    //     return (
-    //       <span>{suggestion.name}</span>
-    //     );
-    //   }
 }
 
 const mapStateToProps = state => {
