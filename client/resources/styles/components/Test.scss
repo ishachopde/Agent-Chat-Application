@@ -2,7 +2,7 @@
     position:fixed;
     bottom:-5px;
     width:448px;
-    background:white;
+    background: #ECF2F9;
     border-radius:5px 5px 0px 0px;
     left: 15px; 
    }
@@ -26,11 +26,9 @@
     font-family: sans-serif;
     color: black;
     text-align: center;
-  
 }
    
    .msg_body{
-    background:white;
     height:200px;
     font-size:12px;
     padding:15px;
@@ -76,12 +74,36 @@ border-radius: 15px;
 box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);
 
    }
+
+   .last-msg-time {
+    font-size: 10px;
+    font-weight: regular;
+    color: #8d8d8d;
+    padding-top: 3px;
+    padding-bottom: 9px;
+   }
+
+   .last-msg-time-left {
+    text-align: left;
+    font-size: 10px;
+    font-weight: regular;
+    color: #8d8d8d;
+    padding-top: 3px;
+    padding-bottom: 9px;
+    }
+   .last-msg-time-right {
+       text-align: right;
+       font-size: 10px;
+    font-weight: regular;
+    color: #8d8d8d;
+    padding-top: 3px;
+    padding-bottom: 9px;
+   }
    
    .msg-right{
     margin-left: 15%;   
     
     text-align: right;
-    background:#d4e7fa;
     padding: 7px 12px 8px 12px;
     min-height:15px;
     margin-bottom:5px;

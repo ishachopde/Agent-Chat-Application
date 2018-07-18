@@ -7,8 +7,11 @@ import { Footer } from "./common/Footer";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
 import Autosuggest from 'react-autosuggest';
-const maxActiveChats = 3;
 
+// var divStyle = {
+//     width:448px,
+//     background: #CB6080;
+// };
 
 const languages = [
     {
@@ -32,8 +35,6 @@ interface IProps {
 interface IState {
     activeChats: any;
     inputMessages: any;
-
-
    // value: string
    // suggestions?
 }
@@ -42,15 +43,14 @@ class AgentChatClass extends React.Component<IProps, IState> {
     private onChange;
     private onSuggestionsUpdateRequested;
     private lastMessageTimers = {};
+    private chatWindowWidth = 448;
+    private marginBetweenTwoChatWindows = 10;
     constructor(props: IProps) {
         super(props);
         const { connectedUsers } = this.props;
         this.state = {
-            activeChats: [],
-            inputMessages: {
-
-            },
-
+                activeChats: [],
+                inputMessages: {},
             // value: '',
             // suggestions: this.getSuggestions('')
         }
@@ -60,15 +60,24 @@ class AgentChatClass extends React.Component<IProps, IState> {
       //  this.onSuggestionsUpdateRequested = this.onSuggestionsUpdateRequested.bind(this);
     }
 
-    static getDerivedStateFromProps(newProps, state){
-        const { connectedUsers } = newProps;
-        if(state.activeChats.length < maxActiveChats) {
-            state = {
-                activeChats: connectedUsers.slice(0, maxActiveChats)
-            };
-        }
+   
 
-        return state;
+    // static getDerivedStateFromProps(newProps, state){
+       
+    //     const maxActiveChats = AgentChatClass.calculateNumberOfChats(window.innerWidth);
+    //     if(state.activeChats.length < maxActiveChats) {
+    //         state = {
+    //             width: window.innerWidth + 'px',
+    //         };
+    //     }
+
+    //     return state;
+    // }
+
+    private calculateNumberOfChats(screenWidth) {
+       // console.log((screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows)));
+        const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
+        return noChatWindows;
     }
 
     public renderChatHistory(chats, user) {
@@ -123,14 +132,16 @@ class AgentChatClass extends React.Component<IProps, IState> {
     renderActiveChats() {
         const { chats, user } = this.props;
         const  { inputMessages } = this.state;
-        return this.state.activeChats.map((activeChat, index) => {
+
+        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
+        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
+        
+        return activeChats.map((activeChat, index) => {
             const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
             if(activeChat.isNewMessage) {
                 this.startMessageReceivedTimer(activeChat.id);
             } else {
                 if(this.lastMessageTimers.hasOwnProperty(activeChat.id)) {
-                    console.log(activeChat.id);
-                    console.log("Cleared");
                     clearInterval(this.lastMessageTimers[activeChat.id]);
                     delete this.lastMessageTimers[activeChat.id];
                 }

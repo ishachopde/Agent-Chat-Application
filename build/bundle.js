@@ -318,7 +318,6 @@ const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
 __webpack_require__(/*! ../resources/styles/components/Main.scss */ "./client/resources/styles/components/Main.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
-const maxActiveChats = 3;
 const languages = [
     {
         name: 'C',
@@ -333,6 +332,8 @@ class AgentChatClass extends React.Component {
     constructor(props) {
         super(props);
         this.lastMessageTimers = {};
+        this.chatWindowWidth = 448;
+        this.marginBetweenTwoChatWindows = 10;
         this.handleMessageChange = (e, userId) => {
             const inputMessages = this.state.inputMessages;
             inputMessages[userId] = e.target.value;
@@ -346,14 +347,9 @@ class AgentChatClass extends React.Component {
             inputMessages: {},
         };
     }
-    static getDerivedStateFromProps(newProps, state) {
-        const { connectedUsers } = newProps;
-        if (state.activeChats.length < maxActiveChats) {
-            state = {
-                activeChats: connectedUsers.slice(0, maxActiveChats)
-            };
-        }
-        return state;
+    calculateNumberOfChats(screenWidth) {
+        const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
+        return noChatWindows;
     }
     renderChatHistory(chats, user) {
         if (!chats) {
@@ -384,15 +380,15 @@ class AgentChatClass extends React.Component {
     renderActiveChats() {
         const { chats, user } = this.props;
         const { inputMessages } = this.state;
-        return this.state.activeChats.map((activeChat, index) => {
+        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
+        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
+        return activeChats.map((activeChat, index) => {
             const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
             if (activeChat.isNewMessage) {
                 this.startMessageReceivedTimer(activeChat.id);
             }
             else {
                 if (this.lastMessageTimers.hasOwnProperty(activeChat.id)) {
-                    console.log(activeChat.id);
-                    console.log("Cleared");
                     clearInterval(this.lastMessageTimers[activeChat.id]);
                     delete this.lastMessageTimers[activeChat.id];
                 }
@@ -523,12 +519,17 @@ class MainClass extends React.Component {
             return "";
         }
         const renderChats = chats.map((message, index) => {
+            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
             if (message.senderId === user.id)
-                return (React.createElement("div", { key: index, className: "msg-left" },
-                    React.createElement("p", null, message.message)));
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-left" },
+                        React.createElement("p", null, message.message)),
+                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-left last-msg-time" }, "Just now")) : ""));
             else
-                return (React.createElement("div", { key: index, className: "msg-right" },
-                    React.createElement("p", null, message.message)));
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-right" },
+                        React.createElement("p", null, message.message)),
+                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-right last-msg-time" }, "Just now")) : ""));
         });
         return (React.createElement("div", { className: "chat-history" }, renderChats));
     }
@@ -726,15 +727,20 @@ class HeaderClass extends React.Component {
     formatSeconds(totalSeconds) {
         let seconds = totalSeconds % 60;
         let minutes = Math.floor(totalSeconds / 60);
+        const hours = Math.floor(totalSeconds / 3600);
         let secondsString = seconds.toString();
         let minuteString = minutes.toString();
+        let hoursString = hours.toString();
         if (seconds < 10) {
             secondsString = '0' + secondsString;
         }
         if (minutes < 10) {
             minuteString = '0' + minuteString;
         }
-        return '00:' + minuteString + ':' + seconds;
+        if (hours < 10) {
+            hoursString = '0' + hoursString;
+        }
+        return hoursString + ':' + minuteString + ':' + seconds;
     }
     componentDidMount() {
         console.log(this.props.user.isOnline);
@@ -775,11 +781,12 @@ class HeaderClass extends React.Component {
         }
     }
     render() {
-        const { onlineCount, offlineCount } = this.props.user;
+        const { onlineCount, offlineCount, isOnline } = this.props.user;
+        const statusDropDownClass = (isOnline) ? "border-online" : "border-offline";
         return (React.createElement("div", { className: "header" },
             React.createElement("a", { href: "#default", className: "logo" }, "Front End Challenge"),
             React.createElement("div", { className: "headerrightitems" },
-                React.createElement("div", { className: "selectWrapper" },
+                React.createElement("div", { className: `selectWrapper ${statusDropDownClass}` },
                     React.createElement("select", { className: "selectBox", onChange: this.changeStatusChange.bind(this) },
                         React.createElement("option", null, "Online"),
                         React.createElement("option", null, "Offline"))),
@@ -3609,7 +3616,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "body {\n  background-color: F9FAFE; }\n", ""]);
+exports.push([module.i, "body {\n  background-color: #F9FAFE; }\n", ""]);
 
 // exports
 
@@ -3647,7 +3654,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, ".msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: white;\n  border-radius: 5px 5px 0px 0px;\n  left: 15px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center; }\n\n.msg_body {\n  background: white;\n  height: 200px;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  background: #d4e7fa;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  background: #CB6080;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
+exports.push([module.i, ".msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0px 0px;\n  left: 15px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center; }\n\n.msg_body {\n  height: 200px;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  background: #CB6080;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
 
 // exports
 
@@ -3685,7 +3692,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, "ul.menu-list {\n  display: flex;\n  margin: 0;\n  padding: 0 30px;\n  background: black;\n  list-style: none; }\n  ul.menu-list > li {\n    padding: 0 4px;\n    margin: 13px 0 9px; }\n    ul.menu-list > li a,\n    ul.menu-list > li div {\n      float: left;\n      color: white;\n      line-height: 16px; }\n    ul.menu-list > li a,\n    ul.menu-list > li a:hover {\n      cursor: pointer;\n      text-decoration: none; }\n    ul.menu-list > li.title {\n      font-weight: bold; }\n    ul.menu-list > li.selected > a {\n      font-weight: bold;\n      color: blue; }\n    ul.menu-list > li.separated {\n      border-left: 1px solid #3d526c;\n      padding-left: 9px;\n      margin-left: 9px; }\n    ul.menu-list > li.ml-auto {\n      margin-left: auto; }\n\ndiv.header-logo {\n  background-size: auto;\n  background-repeat: no-repeat;\n  background-position: center;\n  height: 20px;\n  width: 50px;\n  color: transparent; }\n\nselect.status {\n  margin-top: 10px;\n  background: #F9FAFE;\n  border: 2px solid #A3ABB3;\n  border-radius: 15px; }\n  select.status select.status:hover {\n    background: #E7EDF3; }\n\n.header {\n  overflow: hidden; }\n\n.header a {\n  float: left;\n  color: black;\n  text-align: center;\n  padding: 12px;\n  text-decoration: none;\n  font-size: 18px;\n  line-height: 25px;\n  border-radius: 4px; }\n\n.header a.logo {\n  font-size: 25px;\n  font-weight: bold; }\n\n.header a:hover {\n  background-color: #ddd;\n  color: black; }\n\n.header a.active {\n  background-color: dodgerblue;\n  color: white; }\n\n.header-right {\n  float: right; }\n\n@media screen and (max-width: 500px) {\n  .header a {\n    float: none;\n    display: block;\n    text-align: left; }\n  .header-right {\n    float: none; } }\n\n.headerrightitems {\n  padding: 15px; }\n\n.headertimers12 {\n  background: #cccccc;\n  border: 1px solid #cccccc;\n  width: 300px;\n  overflow: hidden;\n  float: right;\n  border-radius: 15px; }\n\n.headertimers12 .header-timer-divs {\n  display: flex; }\n\n.headertimers12 .header-timer-divs div:first-child {\n  border-right: 1px solid grey; }\n\n.headertimers12 .header-timer-divs div {\n  width: 50%;\n  padding-left: 5%; }\n\n.selectWrapper {\n  float: right;\n  border-radius: 36px;\n  overflow: hidden;\n  background: #cccccc;\n  border: 1px solid #cccccc; }\n\n.selectBox {\n  width: 140px;\n  border: 0px;\n  outline: none; }\n", ""]);
+exports.push([module.i, "ul.menu-list {\n  display: flex;\n  margin: 0;\n  padding: 0 30px;\n  background: black;\n  list-style: none; }\n  ul.menu-list > li {\n    padding: 0 4px;\n    margin: 13px 0 9px; }\n    ul.menu-list > li a,\n    ul.menu-list > li div {\n      float: left;\n      color: white;\n      line-height: 16px; }\n    ul.menu-list > li a,\n    ul.menu-list > li a:hover {\n      cursor: pointer;\n      text-decoration: none; }\n    ul.menu-list > li.title {\n      font-weight: bold; }\n    ul.menu-list > li.selected > a {\n      font-weight: bold;\n      color: blue; }\n    ul.menu-list > li.separated {\n      border-left: 1px solid #3d526c;\n      padding-left: 9px;\n      margin-left: 9px; }\n    ul.menu-list > li.ml-auto {\n      margin-left: auto; }\n\ndiv.header-logo {\n  background-size: auto;\n  background-repeat: no-repeat;\n  background-position: center;\n  height: 20px;\n  width: 50px;\n  color: transparent; }\n\nselect.status {\n  margin-top: 10px;\n  background: #F9FAFE;\n  border: 2px solid #A3ABB3;\n  border-radius: 15px; }\n  select.status select.status:hover {\n    background: #E7EDF3; }\n\n.header {\n  overflow: hidden; }\n\n.header a {\n  float: left;\n  color: black;\n  text-align: center;\n  padding: 12px;\n  text-decoration: none;\n  font-size: 18px;\n  line-height: 25px;\n  border-radius: 4px; }\n\n.header a.logo {\n  font-size: 25px;\n  font-weight: bold; }\n\n.header a:hover {\n  background-color: #ddd;\n  color: black; }\n\n.header a.active {\n  background-color: dodgerblue;\n  color: white; }\n\n.header-right {\n  float: right; }\n\n@media screen and (max-width: 500px) {\n  .header a {\n    float: none;\n    display: block;\n    text-align: left; }\n  .header-right {\n    float: none; } }\n\n.headerrightitems {\n  padding: 15px; }\n\n.headertimers12 {\n  border: 1px solid #D4D9DE;\n  width: 250px;\n  overflow: hidden;\n  float: right;\n  border-radius: 15px;\n  margin-right: 15px;\n  font-size: 13px;\n  height: 20px; }\n\n.headertimers12 .header-timer-divs {\n  display: flex; }\n\n.headertimers12 .header-timer-divs div:first-child {\n  border-right: 1px solid #D4D9DE; }\n\n.headertimers12 .header-timer-divs div {\n  width: 50%;\n  padding-left: 5%;\n  padding-top: 2px; }\n\n.selectWrapper {\n  float: right;\n  border-radius: 36px;\n  overflow: hidden;\n  background: #cccccc; }\n\n.border-online {\n  border: 2px solid #02A626; }\n\n.border-offline {\n  border: 2px solid #D43245; }\n\n.selectBox {\n  width: 140px;\n  border: 0px;\n  outline: none; }\n", ""]);
 
 // exports
 

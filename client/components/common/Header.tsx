@@ -25,9 +25,11 @@ export class HeaderClass extends React.Component<IProps, IState> {
     private formatSeconds (totalSeconds) {
         let seconds: number = totalSeconds % 60;
         let minutes: number = Math.floor(totalSeconds / 60);
+        const hours = Math.floor(totalSeconds / 3600);
         //let hours: number = Math.floor(totalSeconds / 60);
         let secondsString: string = seconds.toString();
         let minuteString: string = minutes.toString();
+        let hoursString: string = hours.toString();
         //console.log(seconds);
         if (seconds < 10) {
             secondsString = '0' + secondsString;
@@ -36,7 +38,10 @@ export class HeaderClass extends React.Component<IProps, IState> {
         if (minutes < 10) {
             minuteString = '0' + minuteString;
         }
-        return '00:' + minuteString + ':' + seconds;
+        if (hours < 10) {
+            hoursString = '0' + hoursString;
+        }
+        return hoursString + ':' + minuteString + ':' + seconds;
     }
 
     componentDidMount () {
@@ -82,13 +87,14 @@ export class HeaderClass extends React.Component<IProps, IState> {
     }
 
     public render() {
-        const { onlineCount, offlineCount } = this.props.user;
+        const { onlineCount, offlineCount, isOnline } = this.props.user;
+        const statusDropDownClass = (isOnline) ? "border-online" : "border-offline";
         //console.log(onlineCount, offlineCount);
         return (
             <div className="header">
   <a href="#default" className="logo">Front End Challenge</a>
   <div className="headerrightitems">
-    <div className="selectWrapper">
+    <div className={`selectWrapper ${statusDropDownClass}`}>
             <select className="selectBox" onChange={this.changeStatusChange.bind(this)}>
             <option>Online</option>
             <option>Offline</option>

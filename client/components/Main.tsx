@@ -35,16 +35,39 @@ class MainClass extends React.Component<IProps, IState> {
             return "";
         }
         const renderChats = chats.map((message, index) => {
+            const messageTime = (index === chats.length - 1) ? (
+                <div className="last-msg-time"> 
+                        Just now
+                    </div>
+            ) : ""
             if (message.senderId === user.id)
                 return (
-                    <div key={index} className="msg-left">
-                        <p>{message.message}</p>
-                    </div>
+                    <div key={index}>
+                        <div className="msg-left">
+                            <p>{message.message}</p>
+                        </div>
+                        {
+                            (index === chats.length - 1) ? (
+                                <div className="last-msg-time-left last-msg-time"> 
+                                        Just now
+                                    </div>
+                            ) : ""
+                        }
+                        </div>
                 );
             else
                 return (
-                    <div key={index} className="msg-right">
-                        <p>{message.message}</p>
+                    <div key={index}>
+                        <div className="msg-right">
+                            <p>{message.message}</p>
+                        </div>
+                        {
+                            (index === chats.length - 1) ? (
+                                <div className="last-msg-time-right last-msg-time"> 
+                                        Just now
+                                    </div>
+                            ) : ""
+                        }
                     </div>
                 );
         });
