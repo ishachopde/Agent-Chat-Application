@@ -2,16 +2,13 @@ import * as React from "react";
 import {sendMessageToAgent } from "../actions/messageActions";
 import { changeLastMessageReceivedCounter } from "../actions/userActions";
 import {getStore} from '../store';
-import "../resources/styles/components/Main.scss";
+import "../resources/styles/components/chat/ChatBox.scss";
 import { Footer } from "./common/Footer";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
 import Autosuggest from 'react-autosuggest';
 
-// var divStyle = {
-//     width:448px,
-//     background: #CB6080;
-// };
+const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"]
 
 const languages = [
     {
@@ -54,8 +51,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
             // value: '',
             // suggestions: this.getSuggestions('')
         }
-        
-       
+
       //  this.onChange = this.onChange.bind(this);
       //  this.onSuggestionsUpdateRequested = this.onSuggestionsUpdateRequested.bind(this);
     }
@@ -75,43 +71,53 @@ class AgentChatClass extends React.Component<IProps, IState> {
     // }
 
     private calculateNumberOfChats(screenWidth) {
-       // console.log((screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows)));
         const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
         return noChatWindows;
     }
 
-    public renderChatHistory(chats, user) {
+    public renderChatHistory(chats, user, backgroundColor) {
         if(!chats) {
             return "";
         }
+
         const renderChats = chats.map((message, index)=> {
-            if(message.senderId === user.id)
-                return (
-                    <div key={index} className="chat-left">
-                        <div className="chat-message-left clearfix">
-
-                            <div className="chat-message-content clearfix">
-
-                                <p>{message.message}</p>
-
-                            </div>
-
-                        </div>
+            const messageTime = (index === chats.length - 1) ? (
+                <div className="last-msg-time"> 
+                        Just now
                     </div>
+            ) : ""; 
+
+        
+            if (message.senderId === user.id)
+                return (
+                    <div key={index}>
+                        <div className="msg-left">
+                            <p>{message.message}</p>
+                        </div>
+                        {
+                            (index === chats.length - 1) ? (
+                                <div className="last-msg-time-left last-msg-time"> 
+                                        Just now
+                                    </div>
+                            ) : ""
+                        }
+                        </div>
                 );
             else
                 return (
-                    <div key={index} className="chat-right">
-                        <div className="chat-message-right clearfix">
-
-                            <div className="chat-message-content clearfix">
-                                <p>{message.message}</p>
-                            </div>
-
+                    <div key={index}>
+                        <div className="msg-right" style={{background: backgroundColor}}>
+                            <p>{message.message}</p>
                         </div>
+                        {
+                            (index === chats.length - 1) ? (
+                                <div className="last-msg-time-right last-msg-time"> 
+                                        Just now
+                                    </div>
+                            ) : ""
+                        }
                     </div>
-
-                );
+                );    
         });
         return (
             <div className="chat-history">
@@ -122,7 +128,6 @@ class AgentChatClass extends React.Component<IProps, IState> {
 
     private startMessageReceivedTimer (id) {
         if(!this.lastMessageTimers.hasOwnProperty(id)) {
-            console.log(id);
             this.lastMessageTimers[id] = setInterval(() => {
                 this.props.dispatch(changeLastMessageReceivedCounter(id));
             }, 1000);
@@ -146,38 +151,45 @@ class AgentChatClass extends React.Component<IProps, IState> {
                     delete this.lastMessageTimers[activeChat.id];
                 }
             }
+
+            const left = (index * this.chatWindowWidth) + (index + 1)  * this.marginBetweenTwoChatWindows;
+            const backgroundColor = backgroundColors[index % maxActiveChats];
+            let boxAnimation = "none";
+            console.log(activeChat.isOnline);
+            // Remind Agent to reply, if haven't replied in one minute.
+            if(activeChat.lastMessageTimer > 60) {
+                boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;     
+            }
             return (
-                <div key={index} id={`live-chat-${index + 1}`} className={"live-chat"}>
-                <header>
-                    <div className="chat-timer">
-                        <span className="chat-timer-text"> {activeChat.lastMessageTimer}s</span>
+            <div key={index} className="msg_box" style={{left: left, animation: boxAnimation}}>
+            <div className="msg_head">
+                    <div className="chat-timer" style={{background: backgroundColor}}>
+                        <span className="chat-timer-text"> {this.formatSeconds(activeChat.lastMessageTimer)}</span>
                     </div>
                     <h4>{activeChat.name}</h4>
-    
-    
-                </header>
-                <div className="chat">
-    
-                    {this.renderChatHistory(chats[activeChat.id], user)}
-    
-                    <p className="chat-feedback">Your partner is typing…</p>
-    
-                    <div className="chat-text-area">
-                    {/* <Autosuggest suggestions={languages}
-                   onSuggestionsUpdateRequested={this.onSuggestionsUpdateRequested}
-                   getSuggestionValue={this.getSuggestionValue}
-                   renderSuggestion={renderSuggestion}
-                   inputProps={inputProps} /> */}
+</div>
+                
+                <div className="msg_wrap">
+                    <div className="msg_body">
+                        <div className="msg_push">
+                            {this.renderChatHistory(chats[activeChat.id], user, backgroundColor)}
 
-                        <textarea 
-                         value={inputMessage}
-                                 onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
-                                      onChange={(ev) => this.handleMessageChange.call(this,ev, activeChat.id)}  
-                        rows={4} cols={50}/>
+                        </div>
+                    </div><div className="msg_footer">
+                    <div className="msg_footer_info_box">
+                        {
+                            (!activeChat.isOnline) ? "User disconnected" : ""
+                        }
                     </div>
-    
+                    <textarea 
+                        value={inputMessage} className="msg_input" disabled={!activeChat.isOnline}
+                                onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
+                                    onChange={(ev) => this.handleMessageChange.call(this,ev, activeChat.id)}  
+                    rows={4}/>
+                    </div>
                 </div>
             </div>
+            
         )});
         
     }
@@ -226,6 +238,22 @@ class AgentChatClass extends React.Component<IProps, IState> {
         }
     }
 
+    private formatSeconds (totalSeconds) {
+        const seconds: number = totalSeconds % 60;
+        const minutes: number = Math.floor(totalSeconds / 60);
+        const hours = Math.floor(totalSeconds / 3600);
+    
+        if (hours !== 0) {
+            return `${hours}h`
+        }
+
+        if (minutes !== 0) {
+            return `${minutes}m`
+        } 
+
+        return `${seconds}s`
+    }
+
 
 
     // getSuggestions(value) {
@@ -260,4 +288,5 @@ const mapStateToProps = state => {
 export const AgentChat = connect(
     mapStateToProps,
 )(AgentChatClass);
+
 

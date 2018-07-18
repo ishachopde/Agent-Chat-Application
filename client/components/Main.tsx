@@ -1,7 +1,7 @@
 import * as React from "react";
 import { sendMessageToAgent } from "../actions/messageActions";
 import { getStore } from '../store';
-import "../resources/styles/components/Test.scss";
+import "../resources/styles/components/chat/ChatBox.scss";
 import { Footer } from "./common/Footer";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
@@ -58,7 +58,7 @@ class MainClass extends React.Component<IProps, IState> {
             else
                 return (
                     <div key={index}>
-                        <div className="msg-right">
+                        <div className="msg-right" style={{ background: "#CB6080"}}>
                             <p>{message.message}</p>
                         </div>
                         {
@@ -92,13 +92,13 @@ class MainClass extends React.Component<IProps, IState> {
             <div>
                 <Header />
                 
-                <div className="msg_box" >
+                <div className="msg_box" style={{left: "10px"}}>
                     <div className="msg_head">
 
-                        <div className="chat-timer">
-                            <span className="chat-timer-text"> 5.4s</span>
+                        <div className="chat-timer" style={{ background: "#CB6080"}}>
+                            <span className="chat-timer-text"> 0s</span>
                         </div>
-                        <h4>{agent.userName} {agent.isOnline}</h4>
+                        <h4>{agent.userName}</h4>
                     </div>
                     <div className="msg_wrap">
                         <div className="msg_body">
@@ -106,7 +106,12 @@ class MainClass extends React.Component<IProps, IState> {
                                 {this.renderChatHistory(chats[agent.id], agent, user)}
                             </div>
                         </div><div className="msg_footer">
-                            <textarea className="msg_input" value={this.state.message}
+                            <div className="msg_footer_info_box">
+                                {
+                                    (!agent.isOnline) ? "Agent disconnected" : ""
+                                }
+                        </div>
+                            <textarea className="msg_input" disabled={!agent.isOnline} value={this.state.message}
                                 onKeyPress={this.handleKeyPress.bind(this)}
                                 onChange={this.handleMessageChange.bind(this)}
                                 rows={4} />

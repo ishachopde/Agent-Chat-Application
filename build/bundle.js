@@ -315,9 +315,10 @@ const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const messageActions_1 = __webpack_require__(/*! ../actions/messageActions */ "./client/actions/messageActions.ts");
 const userActions_1 = __webpack_require__(/*! ../actions/userActions */ "./client/actions/userActions.ts");
 const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
-__webpack_require__(/*! ../resources/styles/components/Main.scss */ "./client/resources/styles/components/Main.scss");
+__webpack_require__(/*! ../resources/styles/components/chat/ChatBox.scss */ "./client/resources/styles/components/chat/ChatBox.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
+const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"];
 const languages = [
     {
         name: 'C',
@@ -351,27 +352,27 @@ class AgentChatClass extends React.Component {
         const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
         return noChatWindows;
     }
-    renderChatHistory(chats, user) {
+    renderChatHistory(chats, user, backgroundColor) {
         if (!chats) {
             return "";
         }
         const renderChats = chats.map((message, index) => {
+            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
             if (message.senderId === user.id)
-                return (React.createElement("div", { key: index, className: "chat-left" },
-                    React.createElement("div", { className: "chat-message-left clearfix" },
-                        React.createElement("div", { className: "chat-message-content clearfix" },
-                            React.createElement("p", null, message.message)))));
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-left" },
+                        React.createElement("p", null, message.message)),
+                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-left last-msg-time" }, "Just now")) : ""));
             else
-                return (React.createElement("div", { key: index, className: "chat-right" },
-                    React.createElement("div", { className: "chat-message-right clearfix" },
-                        React.createElement("div", { className: "chat-message-content clearfix" },
-                            React.createElement("p", null, message.message)))));
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-right", style: { background: backgroundColor } },
+                        React.createElement("p", null, message.message)),
+                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-right last-msg-time" }, "Just now")) : ""));
         });
         return (React.createElement("div", { className: "chat-history" }, renderChats));
     }
     startMessageReceivedTimer(id) {
         if (!this.lastMessageTimers.hasOwnProperty(id)) {
-            console.log(id);
             this.lastMessageTimers[id] = setInterval(() => {
                 this.props.dispatch(userActions_1.changeLastMessageReceivedCounter(id));
             }, 1000);
@@ -393,19 +394,26 @@ class AgentChatClass extends React.Component {
                     delete this.lastMessageTimers[activeChat.id];
                 }
             }
-            return (React.createElement("div", { key: index, id: `live-chat-${index + 1}`, className: "live-chat" },
-                React.createElement("header", null,
-                    React.createElement("div", { className: "chat-timer" },
+            const left = (index * this.chatWindowWidth) + (index + 1) * this.marginBetweenTwoChatWindows;
+            const backgroundColor = backgroundColors[index % maxActiveChats];
+            let boxAnimation = "none";
+            console.log(activeChat.isOnline);
+            if (activeChat.lastMessageTimer > 60) {
+                boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;
+            }
+            return (React.createElement("div", { key: index, className: "msg_box", style: { left: left, animation: boxAnimation } },
+                React.createElement("div", { className: "msg_head" },
+                    React.createElement("div", { className: "chat-timer", style: { background: backgroundColor } },
                         React.createElement("span", { className: "chat-timer-text" },
                             " ",
-                            activeChat.lastMessageTimer,
-                            "s")),
+                            this.formatSeconds(activeChat.lastMessageTimer))),
                     React.createElement("h4", null, activeChat.name)),
-                React.createElement("div", { className: "chat" },
-                    this.renderChatHistory(chats[activeChat.id], user),
-                    React.createElement("p", { className: "chat-feedback" }, "Your partner is typing\u2026"),
-                    React.createElement("div", { className: "chat-text-area" },
-                        React.createElement("textarea", { value: inputMessage, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4, cols: 50 })))));
+                React.createElement("div", { className: "msg_wrap" },
+                    React.createElement("div", { className: "msg_body" },
+                        React.createElement("div", { className: "msg_push" }, this.renderChatHistory(chats[activeChat.id], user, backgroundColor))),
+                    React.createElement("div", { className: "msg_footer" },
+                        React.createElement("div", { className: "msg_footer_info_box" }, (!activeChat.isOnline) ? "User disconnected" : ""),
+                        React.createElement("textarea", { value: inputMessage, className: "msg_input", disabled: !activeChat.isOnline, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4 })))));
         });
     }
     componentWillUnmount() {
@@ -436,6 +444,18 @@ class AgentChatClass extends React.Component {
             ev.preventDefault();
         }
     }
+    formatSeconds(totalSeconds) {
+        const seconds = totalSeconds % 60;
+        const minutes = Math.floor(totalSeconds / 60);
+        const hours = Math.floor(totalSeconds / 3600);
+        if (hours !== 0) {
+            return `${hours}h`;
+        }
+        if (minutes !== 0) {
+            return `${minutes}m`;
+        }
+        return `${seconds}s`;
+    }
 }
 const mapStateToProps = state => {
     return {
@@ -465,7 +485,6 @@ const react_router_dom_1 = __webpack_require__(/*! react-router-dom */ "./node_m
 const Main_1 = __webpack_require__(/*! ./Main */ "./client/components/Main.tsx");
 const UserNamePopUp_1 = __webpack_require__(/*! ./UserNamePopUp */ "./client/components/UserNamePopUp.tsx");
 const AgentChat_1 = __webpack_require__(/*! ./AgentChat */ "./client/components/AgentChat.tsx");
-const Test1_1 = __webpack_require__(/*! ./Test1 */ "./client/components/Test1.tsx");
 __webpack_require__(/*! ../resources/styles/components/App.scss */ "./client/resources/styles/components/App.scss");
 class App extends React.Component {
     constructor(props) {
@@ -476,7 +495,6 @@ class App extends React.Component {
             React.createElement("div", null,
                 React.createElement(react_router_dom_1.Switch, null,
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/", component: UserNamePopUp_1.UserNamePopUp }),
-                    React.createElement(react_router_dom_1.Route, { exact: true, path: "/test", component: Test1_1.Test1 }),
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/agent/:boardId", component: AgentChat_1.AgentChat }),
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/:boardId", component: Main_1.Main })))));
     }
@@ -499,7 +517,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const messageActions_1 = __webpack_require__(/*! ../actions/messageActions */ "./client/actions/messageActions.ts");
 const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
-__webpack_require__(/*! ../resources/styles/components/Test.scss */ "./client/resources/styles/components/Test.scss");
+__webpack_require__(/*! ../resources/styles/components/chat/ChatBox.scss */ "./client/resources/styles/components/chat/ChatBox.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 class MainClass extends React.Component {
@@ -527,7 +545,7 @@ class MainClass extends React.Component {
                     (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-left last-msg-time" }, "Just now")) : ""));
             else
                 return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-right" },
+                    React.createElement("div", { className: "msg-right", style: { background: "#CB6080" } },
                         React.createElement("p", null, message.message)),
                     (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-right last-msg-time" }, "Just now")) : ""));
         });
@@ -540,19 +558,17 @@ class MainClass extends React.Component {
         }
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
-            React.createElement("div", { className: "msg_box" },
+            React.createElement("div", { className: "msg_box", style: { left: "10px" } },
                 React.createElement("div", { className: "msg_head" },
-                    React.createElement("div", { className: "chat-timer" },
-                        React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
-                    React.createElement("h4", null,
-                        agent.userName,
-                        " ",
-                        agent.isOnline)),
+                    React.createElement("div", { className: "chat-timer", style: { background: "#CB6080" } },
+                        React.createElement("span", { className: "chat-timer-text" }, " 0s")),
+                    React.createElement("h4", null, agent.userName)),
                 React.createElement("div", { className: "msg_wrap" },
                     React.createElement("div", { className: "msg_body" },
                         React.createElement("div", { className: "msg_push" }, this.renderChatHistory(chats[agent.id], agent, user))),
                     React.createElement("div", { className: "msg_footer" },
-                        React.createElement("textarea", { className: "msg_input", value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4 }))))));
+                        React.createElement("div", { className: "msg_footer_info_box" }, (!agent.isOnline) ? "Agent disconnected" : ""),
+                        React.createElement("textarea", { className: "msg_input", disabled: !agent.isOnline, value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4 }))))));
     }
     componentWillReceiveProps(newProps) {
     }
@@ -582,48 +598,6 @@ const mapStateToProps = state => {
     };
 };
 exports.Main = react_redux_1.connect(mapStateToProps)(MainClass);
-
-
-/***/ }),
-
-/***/ "./client/components/Test1.tsx":
-/*!*************************************!*\
-  !*** ./client/components/Test1.tsx ***!
-  \*************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-__webpack_require__(/*! ../resources/styles/components/Test.scss */ "./client/resources/styles/components/Test.scss");
-class Test1 extends React.Component {
-    render() {
-        return (React.createElement("div", { className: "msg_box" },
-            React.createElement("div", { className: "msg_head" },
-                React.createElement("div", { className: "chat-timer" },
-                    React.createElement("span", { className: "chat-timer-text" }, " 5.4s")),
-                React.createElement("h4", null, "Swapnil")),
-            React.createElement("div", { className: "msg_wrap" },
-                React.createElement("div", { className: "msg_body" },
-                    React.createElement("div", { className: "msg_push" },
-                        React.createElement("div", { className: "msg-left" }, "left"),
-                        React.createElement("div", { className: "msg-right" }, "right"),
-                        React.createElement("div", { className: "msg-left" }, "left"),
-                        React.createElement("div", { className: "msg-right" }, "right"),
-                        React.createElement("div", { className: "msg-left" }, "left"),
-                        React.createElement("div", { className: "msg-right" }, "right"),
-                        React.createElement("div", { className: "msg-right" }, "right"),
-                        React.createElement("div", { className: "msg-left" }, "left"),
-                        React.createElement("div", { className: "msg-right" }, "right"))),
-                React.createElement("div", { className: "msg_footer" },
-                    React.createElement("textarea", { className: "msg_input", rows: 4 })),
-                " \t"),
-            " \t"));
-    }
-}
-exports.Test1 = Test1;
 
 
 /***/ }),
@@ -996,7 +970,7 @@ exports.default = (state = [], action) => {
             console.log(...state, action.payload.user);
             return [
                 ...state,
-                Object.assign({}, action.payload.user, { lastMessageTimer: 0, isNewMessage: false })
+                Object.assign({}, action.payload.user, { lastMessageTimer: 0, isNewMessage: false, isOnline: true })
             ];
         case 'set-connected-users-online-status':
             const { userId, status } = action.payload;
@@ -1087,66 +1061,6 @@ if(false) {}
 
 /***/ }),
 
-/***/ "./client/resources/styles/components/Main.scss":
-/*!******************************************************!*\
-  !*** ./client/resources/styles/components/Main.scss ***!
-  \******************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-var content = __webpack_require__(/*! !../../../../node_modules/css-loader!../../../../node_modules/sass-loader/lib/loader.js!./Main.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Main.scss");
-
-if(typeof content === 'string') content = [[module.i, content, '']];
-
-var transform;
-var insertInto;
-
-
-
-var options = {"hmr":true}
-
-options.transform = transform
-options.insertInto = undefined;
-
-var update = __webpack_require__(/*! ../../../../node_modules/style-loader/lib/addStyles.js */ "./node_modules/style-loader/lib/addStyles.js")(content, options);
-
-if(content.locals) module.exports = content.locals;
-
-if(false) {}
-
-/***/ }),
-
-/***/ "./client/resources/styles/components/Test.scss":
-/*!******************************************************!*\
-  !*** ./client/resources/styles/components/Test.scss ***!
-  \******************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-var content = __webpack_require__(/*! !../../../../node_modules/css-loader!../../../../node_modules/sass-loader/lib/loader.js!./Test.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Test.scss");
-
-if(typeof content === 'string') content = [[module.i, content, '']];
-
-var transform;
-var insertInto;
-
-
-
-var options = {"hmr":true}
-
-options.transform = transform
-options.insertInto = undefined;
-
-var update = __webpack_require__(/*! ../../../../node_modules/style-loader/lib/addStyles.js */ "./node_modules/style-loader/lib/addStyles.js")(content, options);
-
-if(content.locals) module.exports = content.locals;
-
-if(false) {}
-
-/***/ }),
-
 /***/ "./client/resources/styles/components/UserNamePopUp.scss":
 /*!***************************************************************!*\
   !*** ./client/resources/styles/components/UserNamePopUp.scss ***!
@@ -1170,6 +1084,36 @@ options.transform = transform
 options.insertInto = undefined;
 
 var update = __webpack_require__(/*! ../../../../node_modules/style-loader/lib/addStyles.js */ "./node_modules/style-loader/lib/addStyles.js")(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {}
+
+/***/ }),
+
+/***/ "./client/resources/styles/components/chat/ChatBox.scss":
+/*!**************************************************************!*\
+  !*** ./client/resources/styles/components/chat/ChatBox.scss ***!
+  \**************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(/*! !../../../../../node_modules/css-loader!../../../../../node_modules/sass-loader/lib/loader.js!./ChatBox.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/chat/ChatBox.scss");
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(/*! ../../../../../node_modules/style-loader/lib/addStyles.js */ "./node_modules/style-loader/lib/addStyles.js")(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -3623,44 +3567,6 @@ exports.push([module.i, "body {\n  background-color: #F9FAFE; }\n", ""]);
 
 /***/ }),
 
-/***/ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Main.scss":
-/*!*************************************************************************************************************************!*\
-  !*** ./node_modules/css-loader!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Main.scss ***!
-  \*************************************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-loader/lib/css-base.js */ "./node_modules/css-loader/lib/css-base.js")(false);
-// imports
-
-
-// module
-exports.push([module.i, "a {\n  text-decoration: none; }\n\nfieldset {\n  border: 0;\n  margin: 0;\n  padding: 0; }\n\nh4, h5 {\n  line-height: 1.5em;\n  margin: 0; }\n\nhr {\n  background: #e9e9e9;\n  border: 0;\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n  height: 1px;\n  margin: 0;\n  min-height: 1px; }\n\nimg {\n  border: 0;\n  display: block;\n  height: auto;\n  max-width: 100%; }\n\ninput {\n  border: 0;\n  color: inherit;\n  font-family: inherit;\n  font-size: 100%;\n  line-height: normal;\n  margin: 0; }\n\np {\n  margin: 0; }\n\n.clearfix {\n  *zoom: 1; }\n\n/* For IE 6/7 */\n.clearfix:before, .clearfix:after {\n  content: \"\";\n  display: table; }\n\n.clearfix:after {\n  clear: both; }\n\n/* ---------- LIVE-CHAT ---------- */\n@media only screen and (max-width: 580px) {\n  #live-chat-2 {\n    width: 448px;\n    left: 490px; }\n  #live-chat-3 {\n    display: none !important; } }\n\n@media only screen and (max-width: 1000px) {\n  #live-chat-3 {\n    display: none !important; } }\n\n.live-chat {\n  background: #ECF2F9;\n  border-radius: 15px 15px 0px 0px;\n  margin-left: 30px;\n  margin-right: 30px;\n  bottom: 0;\n  position: fixed; }\n\n#live-chat-1 {\n  max-width: 448px;\n  left: 10px; }\n\n#live-chat-2 {\n  width: 448px;\n  left: 490px; }\n\n#live-chat-3 {\n  width: 448px;\n  left: 940px; }\n\n.live-chat header {\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  display: table;\n  border-bottom: 1px solid #D4D9DF; }\n\n.live-chat h4 {\n  font-size: 25px;\n  font-weight: 100;\n  display: table-cell;\n  text-align: center;\n  vertical-align: middle;\n  width: 100%;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black; }\n\n.live-chat h5 {\n  font-size: 10px; }\n\n.live-chat form {\n  padding: 24px; }\n\n.live-chat input[type=\"text\"] {\n  border: 1px solid #ccc;\n  border-radius: 3px;\n  padding: 8px;\n  outline: none;\n  width: 234px; }\n\n.chat-message-counter {\n  background: #e62727;\n  border: 1px solid #fff;\n  border-radius: 50%;\n  display: none;\n  font-size: 12px;\n  font-weight: bold;\n  height: 28px;\n  left: 0;\n  line-height: 28px;\n  margin: -15px 0 0 -15px;\n  position: absolute;\n  text-align: center;\n  top: 0;\n  width: 28px; }\n\n.chat-close {\n  background: #1b2126;\n  border-radius: 50%;\n  color: #fff;\n  display: block;\n  float: right;\n  font-size: 10px;\n  height: 16px;\n  line-height: 16px;\n  margin: 2px 0 0 0;\n  text-align: center;\n  width: 16px; }\n\n.chat {\n  background: #ECF2F9; }\n\n.chat-history {\n  max-height: 252px;\n  overflow-y: scroll; }\n\n.chat-left {\n  width: 100%; }\n\n.chat-right {\n  width: 100%; }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n\n.chat-timer h4 {\n  display: table-cell;\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black; }\n\n.chat-message-left {\n  float: left;\n  background: white;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-left: 15px;\n  margin-top: 5px; }\n\n#live-chat-1 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #CB6080;\n  color: white; }\n\n#live-chat-2 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #0AA693;\n  color: white; }\n\n#live-chat-3 .chat-message-right {\n  float: right;\n  max-width: 362px;\n  padding: 7px 12px 8px 12px;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05);\n  margin-right: 15px;\n  margin-top: 5px;\n  background: #966AB8;\n  color: white; }\n\n.chat-time-left {\n  float: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.chat-time-right {\n  float: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.chat-text-area textarea {\n  width: 448px;\n  height: auto;\n  background: #F9FAFE;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  padding: 0px;\n  width: 444px; }\n\n.chat-feedback {\n  font-style: italic;\n  margin: 0 0 0 80px; }\n", ""]);
-
-// exports
-
-
-/***/ }),
-
-/***/ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Test.scss":
-/*!*************************************************************************************************************************!*\
-  !*** ./node_modules/css-loader!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/Test.scss ***!
-  \*************************************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-loader/lib/css-base.js */ "./node_modules/css-loader/lib/css-base.js")(false);
-// imports
-
-
-// module
-exports.push([module.i, ".msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0px 0px;\n  left: 15px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center; }\n\n.msg_body {\n  height: 200px;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  background: #CB6080;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.chat-timer {\n  float: left;\n  background: #CB6080;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
-
-// exports
-
-
-/***/ }),
-
 /***/ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/UserNamePopUp.scss":
 /*!**********************************************************************************************************************************!*\
   !*** ./node_modules/css-loader!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/UserNamePopUp.scss ***!
@@ -3674,6 +3580,25 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 // module
 exports.push([module.i, "ul {\n  list-style: none;\n  word-wrap: break-word; }\n\n/* Pages */\n.pages {\n  height: 100%;\n  margin: 0;\n  padding: 0;\n  width: 100%; }\n\n.page {\n  height: 100%;\n  position: absolute;\n  width: 100%; }\n\n/* Login Page */\n.login.page {\n  background-color: #000; }\n\n.login.page .form {\n  height: 100px;\n  margin-top: -100px;\n  position: absolute;\n  text-align: center;\n  top: 50%;\n  width: 100%; }\n\n.login.page .form .usernameInput {\n  background-color: transparent;\n  border: none;\n  border-bottom: 2px solid #fff;\n  outline: none;\n  padding-bottom: 15px;\n  text-align: center;\n  width: 400px; }\n\n.login.page .form .agent-checkbox {\n  color: white;\n  margin-top: 20px; }\n\n.login.page .title {\n  font-size: 200%; }\n\n.login.page .usernameInput {\n  font-size: 200%;\n  letter-spacing: 3px; }\n\n.login.page .title, .login.page .usernameInput {\n  color: #fff;\n  font-weight: 100; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/chat/ChatBox.scss":
+/*!*********************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/chat/ChatBox.scss ***!
+  \*********************************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/css-loader/lib/css-base.js */ "./node_modules/css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 2px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 2px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 2px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 2px solid #3D9CC4; } }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0px 0px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
 
 // exports
 

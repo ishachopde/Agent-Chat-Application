@@ -8,7 +8,8 @@ export default (state = [], action) => {
                 {
                     ...action.payload.user,
                     lastMessageTimer: 0,
-                    isNewMessage: false
+                    isNewMessage: false,
+                    isOnline: true
                 }
             ]
         case 'set-connected-users-online-status':
