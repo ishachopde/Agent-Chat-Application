@@ -7,7 +7,8 @@ import { Footer } from "./common/Footer";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
 import * as Autosuggest from 'react-autosuggest';
-
+import Suggestions from './common/AISuggestions';
+import axios from 'axios';
 const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"]
 
 const languages = [
@@ -112,10 +113,20 @@ class AgentChatClass extends React.Component<IProps, IState> {
                 activeChats: [],
                 inputMessages: {},
                 value: '',
-                suggestions: getSuggestions('')
+                suggestions: []
         }
 
     
+    }
+
+    private getInfo (newValue) {
+        axios.get(`https://dev.cresta.ai/api/front_end_challenge`)
+          .then(({ data }) => {
+              console.log(data);
+            this.setState({
+                suggestions: data
+            })
+          })
     }
 
     private calculateNumberOfChats(screenWidth) {
@@ -270,11 +281,6 @@ class AgentChatClass extends React.Component<IProps, IState> {
 
                         </div>
                     </div><div className="msg_footer">
-                    <div className="msg_footer_info_box">
-                        {
-                            (!activeChat.isOnline) ? "User disconnected" : ""
-                        }
-                    </div>
 
                     {/* <Autosuggest 
                     onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
@@ -287,17 +293,35 @@ class AgentChatClass extends React.Component<IProps, IState> {
         inputProps={inputProps} 
       />
       <button value="send" /> */}
+
+
+      <Suggestions userId={activeChat.id} results={this.state.suggestions} onSuggestionClick={this.onSuggestionClick.bind(this)}/>
                     <textarea 
                         value={inputMessage} className="msg_input" disabled={!activeChat.isOnline}
                                 onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
                                     onChange={(ev) => this.handleMessageChange.call(this,ev, activeChat.id)}  
                     rows={4}/>
+                     <div className="msg_footer_info_box">
+                        {
+                            (!activeChat.isOnline) ? "User disconnected" : ""
+                        }
+                    </div>
                     </div>
                 </div>
             </div>
-            
         )});
         
+    }
+
+
+    onSuggestionClick (suggestion, userId) {
+        console.log("clicked" + suggestion);
+        const inputMessages = this.state.inputMessages;
+        inputMessages[userId] = suggestion;
+        this.setState({
+            inputMessages,
+            suggestions: []
+        })
     }
 
     componentWillUnmount() {
@@ -352,6 +376,9 @@ class AgentChatClass extends React.Component<IProps, IState> {
     private handleMessageChange = (e, userId) => {
         const inputMessages = this.state.inputMessages;
         inputMessages[userId] = e.target.value;
+        
+        if(e.target.value.length >= 5)
+            this.getInfo.call(this, e.target.value);
         this.setState({
             inputMessages
         })

@@ -17,6 +17,7 @@
         "@types/webpack": "^4.4.4",
         "@webscopeio/react-textarea-autocomplete": "^2.3.0",
         "awesome-typescript-loader": "^5.2.0",
+        "axios": "^0.18.0",
         "body-parser": "~1.15.1",
         "cookie-parser": "~1.4.3",
         "css-loader": "^0.28.11",
