@@ -246,6 +246,25 @@ exports.setActiveUser = setActiveUser;
 
 /***/ }),
 
+/***/ "./client/apis/AiSuggestionApi.ts":
+/*!****************************************!*\
+  !*** ./client/apis/AiSuggestionApi.ts ***!
+  \****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const axios_1 = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+function getSuggestions(text) {
+    return axios_1.default.get(`https://dev.cresta.ai/api/front_end_challenge`);
+}
+exports.getSuggestions = getSuggestions;
+
+
+/***/ }),
+
 /***/ "./client/chat-middlerware.ts":
 /*!************************************!*\
   !*** ./client/chat-middlerware.ts ***!
@@ -329,92 +348,20 @@ __webpack_require__(/*! ../resources/styles/components/chat/ChatBox.scss */ "./c
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 const AISuggestions_1 = __webpack_require__(/*! ./common/AISuggestions */ "./client/components/common/AISuggestions.tsx");
-const axios_1 = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+const Chats_1 = __webpack_require__(/*! ./Chats */ "./client/components/Chats.tsx");
+const AiSuggestionApi_1 = __webpack_require__(/*! ../apis/AiSuggestionApi */ "./client/apis/AiSuggestionApi.ts");
 const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"];
-const languages = [
-    {
-        name: 'C',
-        year: 1972
-    },
-    {
-        name: 'C#',
-        year: 2000
-    },
-    {
-        name: 'C++',
-        year: 1983
-    },
-    {
-        name: 'Clojure',
-        year: 2007
-    },
-    {
-        name: 'Elm',
-        year: 2012
-    },
-    {
-        name: 'Go',
-        year: 2009
-    },
-    {
-        name: 'Haskell',
-        year: 1990
-    },
-    {
-        name: 'Java',
-        year: 1995
-    },
-    {
-        name: 'Javascript',
-        year: 1995
-    },
-    {
-        name: 'Perl',
-        year: 1987
-    },
-    {
-        name: 'PHP',
-        year: 1995
-    },
-    {
-        name: 'Python',
-        year: 1991
-    },
-    {
-        name: 'Ruby',
-        year: 1995
-    },
-    {
-        name: 'Scala',
-        year: 2003
-    }
-];
-const escapeRegexCharacters = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const getSuggestions = value => {
-    const escapedValue = escapeRegexCharacters(value.trim());
-    if (escapedValue === '') {
-        return [];
-    }
-    const regex = new RegExp('^' + escapedValue, 'i');
-    const suggestions = languages.filter(language => regex.test(language.name));
-    return suggestions;
-};
 class AgentChatClass extends React.Component {
     constructor(props) {
         super(props);
         this.lastMessageTimers = {};
         this.chatWindowWidth = 448;
         this.marginBetweenTwoChatWindows = 12;
-        this.onChange = (event, { newValue, method }) => {
-            this.setState({
-                value: newValue
-            });
-        };
         this.handleMessageChange = (e, userId) => {
             const inputMessages = this.state.inputMessages;
             inputMessages[userId] = e.target.value;
-            if (e.target.value.length >= 5)
-                this.getInfo.call(this, e.target.value);
+            if (e.target.value.length >= 1)
+                this.getSuggestions.call(this, e.target.value);
             this.setState({
                 inputMessages
             });
@@ -424,89 +371,37 @@ class AgentChatClass extends React.Component {
             activeChats: [],
             inputMessages: {},
             value: '',
+            currentlyChattingUser: "",
             suggestions: []
         };
     }
-    getInfo(newValue) {
-        axios_1.default.get(`https://dev.cresta.ai/api/front_end_challenge`)
-            .then(({ data }) => {
-            console.log(data);
-            this.setState({
-                suggestions: data
-            });
-        });
+    render() {
+        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
+        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
+        const inactiveChats = this.props.connectedUsers.slice(maxActiveChats, this.props.connectedUsers.length);
+        return (React.createElement("div", null,
+            React.createElement(Header_1.Header, null),
+            this.renderHorizontalOnlineUsers.call(this, maxActiveChats, inactiveChats),
+            this.renderActiveChats.call(this, maxActiveChats, activeChats)));
     }
-    calculateNumberOfChats(screenWidth) {
-        const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
-        return noChatWindows;
-    }
-    renderChatHistory(chats, user, backgroundColor) {
-        if (!chats) {
+    renderHorizontalOnlineUsers(maxActiveChats, inactiveChats) {
+        if (inactiveChats.length === 0)
             return "";
-        }
-        const renderChats = chats.map((message, index) => {
-            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
-            if (message.senderId === user.id)
-                return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-left" },
-                        React.createElement("p", null, message.message)),
-                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-left last-msg-time" }, "Just now")) : ""));
-            else
-                return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-right", style: { background: backgroundColor } },
-                        React.createElement("p", null, message.message)),
-                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-right last-msg-time" }, "Just now")) : ""));
-        });
-        return (React.createElement("div", { className: "chat-history" }, renderChats));
+        return (React.createElement("div", null,
+            React.createElement("div", { className: "scrollview-header" }, "Online Users"),
+            React.createElement("div", { className: "scrollmenu" }, inactiveChats.map((inactiveChat, index) => {
+                const backgroundColor = backgroundColors[index % maxActiveChats];
+                let boxAnimation = "none";
+                if (inactiveChat.lastMessageTimer > 60) {
+                    boxAnimation = `blink-alert .5s step-end infinite alternate`;
+                }
+                return (React.createElement("span", { onClick: (ev) => this.setActiveUser.call(this, inactiveChat.id), key: index, style: { background: backgroundColor, animation: boxAnimation } },
+                    React.createElement("div", null, inactiveChat.name.substring(0, 1))));
+            }))));
     }
-    startMessageReceivedTimer(id) {
-        if (!this.lastMessageTimers.hasOwnProperty(id)) {
-            this.lastMessageTimers[id] = setInterval(() => {
-                this.props.dispatch(userActions_1.changeLastMessageReceivedCounter(id));
-            }, 1000);
-        }
-    }
-    getSuggestionValue(suggestion) {
-        if (suggestion.isAddNew) {
-            return this.state.value;
-        }
-        return suggestion.name;
-    }
-    ;
-    renderSuggestion(suggestion) {
-        if (suggestion.isAddNew) {
-            return (React.createElement("span", null,
-                "[+] Add new: ",
-                React.createElement("strong", null, this.state.value)));
-        }
-        return suggestion.name;
-    }
-    ;
-    onSuggestionsFetchRequested({ value }) {
-        this.setState({
-            suggestions: getSuggestions(value)
-        });
-    }
-    ;
-    onSuggestionsClearRequested() {
-        this.setState({
-            suggestions: []
-        });
-    }
-    ;
-    onSuggestionSelected(event, { suggestion }) {
-        console.log(suggestion);
-    }
-    ;
     renderActiveChats(maxActiveChats, activeChats) {
-        const { value, suggestions } = this.state;
-        const inputProps = {
-            placeholder: "",
-            value,
-            onChange: this.onChange
-        };
         const { chats, user } = this.props;
-        const { inputMessages } = this.state;
+        const { inputMessages, currentlyChattingUser } = this.state;
         return activeChats.map((activeChat, index) => {
             const inputMessage = (inputMessages[activeChat.id] ? inputMessages[activeChat.id] : "");
             if (activeChat.isNewMessage) {
@@ -524,7 +419,8 @@ class AgentChatClass extends React.Component {
             if (activeChat.lastMessageTimer > 60) {
                 boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;
             }
-            return (React.createElement("div", { key: index, className: "msg_box", style: { left: left, animation: boxAnimation } },
+            const activeChatBorder = (currentlyChattingUser === activeChat.id) ? `4px solid ${backgroundColor}` : "";
+            return (React.createElement("div", { key: index, className: "msg_box", style: { left: left, animation: boxAnimation, border: activeChatBorder } },
                 React.createElement("div", { className: "msg_head" },
                     React.createElement("div", { className: "chat-timer", style: { background: backgroundColor } },
                         React.createElement("span", { className: "chat-timer-text" },
@@ -533,47 +429,50 @@ class AgentChatClass extends React.Component {
                     React.createElement("h4", null, activeChat.name)),
                 React.createElement("div", { className: "msg_wrap" },
                     React.createElement("div", { className: "msg_body" },
-                        React.createElement("div", { className: "msg_push" }, this.renderChatHistory(chats[activeChat.id], user, backgroundColor))),
+                        React.createElement("div", { className: "msg_push" },
+                            React.createElement(Chats_1.Chats, { chats: chats[activeChat.id], user: user, backgroundColor: backgroundColor }))),
                     React.createElement("div", { className: "msg_footer" },
                         React.createElement(AISuggestions_1.default, { userId: activeChat.id, results: this.state.suggestions, onSuggestionClick: this.onSuggestionClick.bind(this) }),
-                        React.createElement("textarea", { value: inputMessage, className: "msg_input", disabled: !activeChat.isOnline, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4 }),
-                        React.createElement("div", { className: "msg_footer_info_box" }, (!activeChat.isOnline) ? "User disconnected" : "")))));
+                        React.createElement("div", { className: "msg_footer_info_box" }, (!activeChat.isOnline) ? "User disconnected" : ""),
+                        React.createElement("textarea", { value: inputMessage, placeholder: "Type a message..", className: "msg_input", disabled: !activeChat.isOnline, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onFocus: () => this.onInputFocused(activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4 })))));
         });
     }
+    onInputFocused(userId) {
+        this.setState({
+            currentlyChattingUser: userId
+        });
+    }
+    getSuggestions(newValue) {
+        AiSuggestionApi_1.getSuggestions(newValue)
+            .then(({ data }) => {
+            this.setState({
+                suggestions: data
+            });
+        });
+    }
+    calculateNumberOfChats(screenWidth) {
+        const noChatWindows = Math.floor(screenWidth / (this.chatWindowWidth + this.marginBetweenTwoChatWindows));
+        return noChatWindows;
+    }
+    startMessageReceivedTimer(id) {
+        if (!this.lastMessageTimers.hasOwnProperty(id)) {
+            this.lastMessageTimers[id] = setInterval(() => {
+                this.props.dispatch(userActions_1.changeLastMessageReceivedCounter(id));
+            }, 1000);
+        }
+    }
     onSuggestionClick(suggestion, userId) {
-        console.log("clicked" + suggestion);
         const inputMessages = this.state.inputMessages;
         inputMessages[userId] = suggestion;
         this.setState({
-            inputMessages
+            inputMessages,
+            suggestions: []
         });
     }
     componentWillUnmount() {
         Object.keys(this.lastMessageTimers).forEach((key) => {
             clearInterval(this.lastMessageTimers[key]);
         });
-    }
-    render() {
-        const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
-        const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
-        const inactiveChats = this.props.connectedUsers.slice(maxActiveChats, this.props.connectedUsers.length);
-        return (React.createElement("div", null,
-            React.createElement(Header_1.Header, null),
-            this.renderHorizontalOnlineUsers.call(this, maxActiveChats, inactiveChats),
-            this.renderActiveChats.call(this, maxActiveChats, activeChats)));
-    }
-    renderHorizontalOnlineUsers(maxActiveChats, inactiveChats) {
-        return (React.createElement("div", null,
-            React.createElement("div", { className: "scrollview-header" }, "Online Users"),
-            React.createElement("div", { className: "scrollmenu" }, inactiveChats.map((inactiveChat, index) => {
-                const backgroundColor = backgroundColors[index % maxActiveChats];
-                let boxAnimation = "none";
-                if (inactiveChat.lastMessageTimer > 60) {
-                    boxAnimation = `blink-alert .5s step-end infinite alternate`;
-                }
-                return (React.createElement("span", { onClick: (ev) => this.setActiveUser.call(this, inactiveChat.id), key: index, style: { background: backgroundColor, animation: boxAnimation } },
-                    React.createElement("div", null, inactiveChat.name.substring(0, 1))));
-            }))));
     }
     setActiveUser(userId) {
         this.props.dispatch(userActions_1.setActiveUser(userId));
@@ -634,7 +533,7 @@ exports.AgentChat = react_redux_1.connect(mapStateToProps)(AgentChatClass);
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const react_router_dom_1 = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/es/index.js");
-const Main_1 = __webpack_require__(/*! ./Main */ "./client/components/Main.tsx");
+const UserChat_1 = __webpack_require__(/*! ./UserChat */ "./client/components/UserChat.tsx");
 const UserNamePopUp_1 = __webpack_require__(/*! ./UserNamePopUp */ "./client/components/UserNamePopUp.tsx");
 const AgentChat_1 = __webpack_require__(/*! ./AgentChat */ "./client/components/AgentChat.tsx");
 __webpack_require__(/*! ../resources/styles/components/App.scss */ "./client/resources/styles/components/App.scss");
@@ -648,7 +547,7 @@ class App extends React.Component {
                 React.createElement(react_router_dom_1.Switch, null,
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/", component: UserNamePopUp_1.UserNamePopUp }),
                     React.createElement(react_router_dom_1.Route, { exact: true, path: "/agent/:boardId", component: AgentChat_1.AgentChat }),
-                    React.createElement(react_router_dom_1.Route, { exact: true, path: "/:boardId", component: Main_1.Main })))));
+                    React.createElement(react_router_dom_1.Route, { exact: true, path: "/:boardId", component: UserChat_1.UserChat })))));
     }
 }
 exports.App = App;
@@ -656,10 +555,51 @@ exports.App = App;
 
 /***/ }),
 
-/***/ "./client/components/Main.tsx":
-/*!************************************!*\
-  !*** ./client/components/Main.tsx ***!
-  \************************************/
+/***/ "./client/components/Chats.tsx":
+/*!*************************************!*\
+  !*** ./client/components/Chats.tsx ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+class Chats extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        const { chats, user, backgroundColor } = this.props;
+        if (!chats) {
+            return "";
+        }
+        const renderChats = chats.map((message, index) => {
+            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
+            if (message.senderId === user.id)
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-right", style: { background: backgroundColor } },
+                        React.createElement("p", null, message.message)),
+                    messageTime));
+            else
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-left" },
+                        React.createElement("p", null, message.message)),
+                    messageTime));
+        });
+        return (React.createElement("div", { className: "chat-history" }, renderChats));
+    }
+}
+exports.Chats = Chats;
+
+
+/***/ }),
+
+/***/ "./client/components/UserChat.tsx":
+/*!****************************************!*\
+  !*** ./client/components/UserChat.tsx ***!
+  \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -672,7 +612,8 @@ const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
 __webpack_require__(/*! ../resources/styles/components/chat/ChatBox.scss */ "./client/resources/styles/components/chat/ChatBox.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
-class MainClass extends React.Component {
+const Chats_1 = __webpack_require__(/*! ./Chats */ "./client/components/Chats.tsx");
+class UserChatClass extends React.Component {
     constructor(props) {
         super(props);
         this.handleMessageChange = (e) => {
@@ -683,25 +624,6 @@ class MainClass extends React.Component {
         this.state = {
             message: "",
         };
-    }
-    renderChatHistory(chats, agent, user) {
-        if (!chats) {
-            return "";
-        }
-        const renderChats = chats.map((message, index) => {
-            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
-            if (message.senderId === user.id)
-                return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-left" },
-                        React.createElement("p", null, message.message)),
-                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-left last-msg-time" }, "Just now")) : ""));
-            else
-                return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-right", style: { background: "#CB6080" } },
-                        React.createElement("p", null, message.message)),
-                    (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time-right last-msg-time" }, "Just now")) : ""));
-        });
-        return (React.createElement("div", { className: "chat-history" }, renderChats));
     }
     render() {
         const { agent, user, chatBoard, chats } = this.props;
@@ -717,12 +639,11 @@ class MainClass extends React.Component {
                     React.createElement("h4", null, agent.userName)),
                 React.createElement("div", { className: "msg_wrap" },
                     React.createElement("div", { className: "msg_body" },
-                        React.createElement("div", { className: "msg_push" }, this.renderChatHistory(chats[agent.id], agent, user))),
+                        React.createElement("div", { className: "msg_push" },
+                            React.createElement(Chats_1.Chats, { chats: chats[agent.id], user: user, backgroundColor: "#CB6080" }))),
                     React.createElement("div", { className: "msg_footer" },
                         React.createElement("div", { className: "msg_footer_info_box" }, (!agent.isOnline) ? "Agent disconnected" : ""),
-                        React.createElement("textarea", { className: "msg_input", disabled: !agent.isOnline, value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4 }))))));
-    }
-    componentWillReceiveProps(newProps) {
+                        React.createElement("textarea", { className: "msg_input", placeholder: "Type a message..", disabled: !agent.isOnline, value: this.state.message, onKeyPress: this.handleKeyPress.bind(this), onChange: this.handleMessageChange.bind(this), rows: 4 }))))));
     }
     handleKeyPress(ev) {
         const { agent, user, chatBoard } = this.props;
@@ -749,7 +670,7 @@ const mapStateToProps = state => {
         agent: state.agent
     };
 };
-exports.Main = react_redux_1.connect(mapStateToProps)(MainClass);
+exports.UserChat = react_redux_1.connect(mapStateToProps)(UserChatClass);
 
 
 /***/ }),
@@ -769,16 +690,6 @@ __webpack_require__(/*! ../resources/styles/components/UserNamePopUp.scss */ "./
 const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
 const userActions_1 = __webpack_require__(/*! ../actions/userActions */ "./client/actions/userActions.ts");
 const uuidv4 = __webpack_require__(/*! uuid/v4 */ "./node_modules/uuid/v4.js");
-const customStyles = {
-    content: {
-        top: '50%',
-        left: '50%',
-        right: 'auto',
-        bottom: 'auto',
-        marginRight: '-50%',
-        transform: 'translate(-50%, -50%)'
-    }
-};
 class UserNamePopUp extends React.Component {
     constructor(props) {
         super(props);
@@ -799,10 +710,8 @@ class UserNamePopUp extends React.Component {
     }
     handleKeyPress(ev) {
         if (ev.which === 13) {
-            console.log(this.props);
             if (this.state.userName) {
                 const store = store_1.getStore();
-                console.log(this.state.isAgent);
                 const userId = uuidv4();
                 store.dispatch(userActions_1.setUserInfo(this.state.userName, this.state.isAgent, userId));
                 store.dispatch(userActions_1.createChatBoard(userId));
@@ -978,26 +887,7 @@ const initialState_1 = __webpack_require__(/*! ./initialState */ "./client/initi
 const chat_middlerware_1 = __webpack_require__(/*! ./chat-middlerware */ "./client/chat-middlerware.ts");
 console.log(initialState_1.default);
 const store_1 = __webpack_require__(/*! ./store */ "./client/store.ts");
-const store = store_1.configure({
-    agent: {
-        name: "",
-        id: "",
-        isOnline: false,
-    },
-    user: {
-        name: "",
-        isAgent: false,
-        id: "",
-        isOnline: false,
-        onlineCount: 0,
-        offlineCount: 0
-    },
-    chatBoard: {
-        chatBoardId: ""
-    },
-    connectedUsers: [],
-    chats: {}
-});
+const store = store_1.configure(initialState_1.default);
 chat_middlerware_1.default(store);
 const ROOT = document.querySelector(".container");
 ReactDOM.render(React.createElement(react_redux_1.Provider, { store: store },
@@ -1016,7 +906,26 @@ ReactDOM.render(React.createElement(react_redux_1.Provider, { store: store },
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = {};
+exports.default = {
+    agent: {
+        userName: "",
+        id: "",
+        isOnline: false,
+    },
+    user: {
+        name: "",
+        isAgent: false,
+        id: "",
+        isOnline: false,
+        onlineCount: 0,
+        offlineCount: 0
+    },
+    chatBoard: {
+        chatBoardId: ""
+    },
+    connectedUsers: [],
+    chats: {}
+};
 
 
 /***/ }),
@@ -1031,12 +940,8 @@ exports.default = {};
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const agent = {
-    name: "",
-    id: false,
-    isOnline: false,
-};
-exports.default = (state = agent, action) => {
+const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/initialState.ts");
+exports.default = (state = initialState_1.default.agent, action) => {
     switch (action.type) {
         case 'agent-assigned':
             return action.payload.agent;
@@ -1061,10 +966,8 @@ exports.default = (state = agent, action) => {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const chatBoard = {
-    chatBoardId: ""
-};
-exports.default = (state = chatBoard, action) => {
+const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/initialState.ts");
+exports.default = (state = initialState_1.default.chatBoard, action) => {
     switch (action.type) {
         case 'create-chat-board':
             return Object.assign({}, state, { chatBoardId: action.payload.chatBoardId });
@@ -1086,9 +989,9 @@ exports.default = (state = chatBoard, action) => {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const uuidv4 = __webpack_require__(/*! uuid/v4 */ "./node_modules/uuid/v4.js");
+const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/initialState.ts");
 const chats = {};
-exports.default = (state = chats, action) => {
+exports.default = (state = initialState_1.default.chats, action) => {
     switch (action.type) {
         case 'message-sent':
             const receiverId = action.payload.message.receiverId;
@@ -1137,7 +1040,8 @@ exports.default = (state = chats, action) => {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = (state = [], action) => {
+const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/initialState.ts");
+exports.default = (state = initialState_1.default.connectedUsers, action) => {
     switch (action.type) {
         case 'user-connected':
             console.log(...state, action.payload.user);
@@ -1173,25 +1077,18 @@ exports.default = (state = [], action) => {
 
 /***/ }),
 
-/***/ "./client/reducers/UserNameReducer.ts":
-/*!********************************************!*\
-  !*** ./client/reducers/UserNameReducer.ts ***!
-  \********************************************/
+/***/ "./client/reducers/UserReducer.ts":
+/*!****************************************!*\
+  !*** ./client/reducers/UserReducer.ts ***!
+  \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const userName = {
-    name: "",
-    isAgent: false,
-    id: "",
-    isOnline: false,
-    onlineCount: 0,
-    offlineCount: 0
-};
-exports.default = (state = userName, action) => {
+const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/initialState.ts");
+exports.default = (state = initialState_1.default.user, action) => {
     switch (action.type) {
         case 'change-userinfo':
             return Object.assign({}, state, { name: action.payload.userName, isAgent: action.payload.isAgent, id: action.payload.id, isOnline: true, onlineCount: 0, offlineCount: 0 });
@@ -1372,22 +1269,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const redux_1 = __webpack_require__(/*! redux */ "./node_modules/redux/es/redux.js");
 let store = null;
 const chat_middlerware_1 = __webpack_require__(/*! ./chat-middlerware */ "./client/chat-middlerware.ts");
-const UserNameReducer_1 = __webpack_require__(/*! ./reducers/UserNameReducer */ "./client/reducers/UserNameReducer.ts");
+const UserReducer_1 = __webpack_require__(/*! ./reducers/UserReducer */ "./client/reducers/UserReducer.ts");
 const ChatsReducer_1 = __webpack_require__(/*! ./reducers/ChatsReducer */ "./client/reducers/ChatsReducer.ts");
 const ChatBoardReducer_1 = __webpack_require__(/*! ./reducers/ChatBoardReducer */ "./client/reducers/ChatBoardReducer.ts");
 const AgentReducer_1 = __webpack_require__(/*! ./reducers/AgentReducer */ "./client/reducers/AgentReducer.ts");
 const ConnectedUsers_1 = __webpack_require__(/*! ./reducers/ConnectedUsers */ "./client/reducers/ConnectedUsers.ts");
 exports.configure = (initialState) => {
-    const actionTrackerReducer = function (state = "", action) {
-        switch (action.type) {
-            default:
-                return {
-                    action
-                };
-        }
-    };
     const appReducer = redux_1.combineReducers({
-        user: UserNameReducer_1.default,
+        user: UserReducer_1.default,
         chatBoard: ChatBoardReducer_1.default,
         chats: ChatsReducer_1.default,
         agent: AgentReducer_1.default,
@@ -5474,7 +5363,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 2px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 2px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 2px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 2px solid #3D9CC4; } }\n\ndiv.scrollmenu {\n  overflow: auto;\n  white-space: nowrap; }\n\n@keyframes blink-alert {\n  50% {\n    border: 2px solid #D43245; } }\n\ndiv.scrollmenu span {\n  display: inline-block;\n  margin: 5px 10px;\n  height: 60px;\n  width: 60px;\n  line-height: 60px;\n  -moz-border-radius: 30px;\n  border-radius: 30px;\n  color: white;\n  text-align: center;\n  font-size: 2em; }\n\ndiv.scrollmenu a {\n  display: inline-block;\n  color: white;\n  text-align: center;\n  padding: 14px;\n  text-decoration: none; }\n\ndiv.scrollmenu a:hover {\n  background-color: #777; }\n\n.scrollview-header {\n  margin-left: 10px;\n  font-size: 20px; }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0px 0px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
+exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 4px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 4px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 4px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 4px solid #3D9CC4; } }\n\ndiv.scrollmenu {\n  overflow: auto;\n  white-space: nowrap; }\n\n@keyframes blink-alert {\n  50% {\n    border: 4px solid #D43245; } }\n\ndiv.scrollmenu span {\n  display: inline-block;\n  margin: 5px 10px;\n  height: 60px;\n  width: 60px;\n  line-height: 60px;\n  -moz-border-radius: 30px;\n  border-radius: 30px;\n  color: white;\n  text-align: center;\n  font-size: 2em; }\n\ndiv.scrollmenu a {\n  display: inline-block;\n  color: white;\n  text-align: center;\n  padding: 14px;\n  text-decoration: none; }\n\ndiv.scrollmenu a:hover {\n  background-color: #777; }\n\n.scrollview-header {\n  margin-left: 10px;\n  font-size: 20px; }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 15px 15px 0px 0px;\n  margin-left: 30px;\n  margin-right: 30px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  padding: 5px;\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
 
 // exports
 
@@ -5493,7 +5382,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, ".suggestions {\n  padding-left: 0px;\n  margin: 0px;\n  background-color: #fff;\n  background: rgba(255, 255, 255, 0);\n  list-style: none;\n  /* position: absolute; */\n  left: -9999px; }\n\n.suggestions li {\n  padding: 10px;\n  border: 1px solid #D4D9DF; }\n", ""]);
+exports.push([module.i, ".suggestions {\n  padding-left: 0px;\n  margin: 0px;\n  background-color: #fff;\n  background: rgba(255, 255, 255, 0);\n  list-style: none;\n  position: absolute;\n  width: 100%;\n  bottom: 68px; }\n\n.suggestions li {\n  padding: 10px;\n  border: 1px solid #D4D9DF;\n  background-color: #F9FAFE; }\n", ""]);
 
 // exports
 

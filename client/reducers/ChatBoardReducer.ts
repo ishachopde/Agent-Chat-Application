@@ -1,8 +1,6 @@
+import initialState from "../initialState";
 
-const chatBoard = {
-    chatBoardId: ""
-};
-export default (state = chatBoard, action) => {
+export default (state = initialState.chatBoard, action) => {
     switch(action.type) {
         case 'create-chat-board':
             return {

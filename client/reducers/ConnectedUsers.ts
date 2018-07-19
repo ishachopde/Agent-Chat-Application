@@ -1,4 +1,6 @@
-export default (state = [], action) => {
+import initialState from "../initialState";
+
+export default (state = initialState.connectedUsers, action) => {
     switch(action.type) {
         case 'user-connected':
             console.log( ...state,

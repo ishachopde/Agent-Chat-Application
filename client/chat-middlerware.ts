@@ -6,12 +6,15 @@ import { messageReceive } from "./actions/messageActions";
 export function chatMiddleware(store) {
   return next => action => {
     const result = next(action);
+
+    // Send message to the user.
     if (socket && action.type === "message-sent") {
       //let messages = store.getState().messages;
         console.log("Emitting messages");
         socket.emit('message', action.payload.message);
     }
 
+    // Initialises the application
       if (socket && action.type === "create-chat-board") {
           let state = store.getState();
           socket.emit('create-board', {
@@ -20,6 +23,8 @@ export function chatMiddleware(store) {
               chatBoardId: state.user.id
           });
       } 
+
+      // Set User status.
       if (socket && action.type === "set-user-online-status") {
         let state = store.getState();
         socket.emit('user-status-change', {
@@ -34,20 +39,24 @@ export function chatMiddleware(store) {
 }
  
 export default function (store) {
-  socket = io();
+    socket = io();
  
-  socket.on('message', data => {
-      store.dispatch(messageReceive(data));
-  });
+    // On receiving the message.
+    socket.on('message', data => {
+        store.dispatch(messageReceive(data));
+    });
 
+    // On agent is connectd to the user.
     socket.on('agent-connected', data => {
         store.dispatch(agentAssigned(data));
     });
 
+    // On user is connectd to the agent.
     socket.on('user-connected', data => {
         store.dispatch(userConnected(data));
     });
 
+    // On user status change, status can be Onine or Offline..
     socket.on('user-status-change', data => {
         console.log(data);
         if(!data.isAgent) 

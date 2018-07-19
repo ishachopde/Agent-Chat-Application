@@ -1,11 +1,10 @@
 
 import * as React from "react";
-import { HashRouter, Route, Switch, Redirect} from "react-router-dom";
-import * as Modal from 'react-modal';
 import "../resources/styles/components/UserNamePopUp.scss";
 import {getStore} from '../store';
 import { setUserInfo, createChatBoard } from "../actions/userActions";
 const uuidv4 = require('uuid/v4');
+
 interface IProps {
     dispatch?
     history?
@@ -16,20 +15,7 @@ interface IState {
     isAgent: boolean;
 }
 
-const customStyles = {
-    content : {
-      top                   : '50%',
-      left                  : '50%',
-      right                 : 'auto',
-      bottom                : 'auto',
-      marginRight           : '-50%',
-      transform             : 'translate(-50%, -50%)'
-    }
-  };
-  
-
 export class UserNamePopUp extends React.Component<IProps, IState> {
-
     constructor(props: IProps) {
         super(props);
 
@@ -39,24 +25,24 @@ export class UserNamePopUp extends React.Component<IProps, IState> {
           };
     }
 
-    handleFullNameChange = (e) => {
+    private handleFullNameChange = (e) => {
         this.setState({
             userName: e.target.value
         })
     }
 
-    handleAgentChange = (e) => {
+    // Set IsAgent Status
+    private handleAgentChange = (e) => {
         this.setState({
             isAgent: e.target.checked
         })
     }
 
-    handleKeyPress(ev) {
+    // Handles key press event on username text box.
+    private handleKeyPress(ev) {
         if (ev.which === 13) {
-            console.log(this.props);
             if (this.state.userName) {
                 const store = getStore();
-                console.log(this.state.isAgent);
                 const userId = uuidv4();
                 store.dispatch(setUserInfo(this.state.userName, this.state.isAgent, userId));
                 store.dispatch(createChatBoard(userId));
@@ -71,11 +57,10 @@ export class UserNamePopUp extends React.Component<IProps, IState> {
         }
     }
 
-  render() {
+  public render() {
     return (
 
         <ul className="pages">
-
             <li className="login page">
                 <div className="form">
                     <h3 className="title">What's your nickname?</h3>
@@ -89,7 +74,6 @@ export class UserNamePopUp extends React.Component<IProps, IState> {
                     </div>
                 </div>
             </li>
-
         </ul>
     );
   }

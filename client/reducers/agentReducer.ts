@@ -1,9 +1,6 @@
-const agent = {
-    name : "",
-    id: false,
-    isOnline: false,
-};
-export default (state = agent, action) => {
+import initialState from "../initialState";
+
+export default (state = initialState.agent, action) => {
     switch(action.type) {
         case 'agent-assigned':
             return action.payload.agent;

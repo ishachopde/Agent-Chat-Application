@@ -1,7 +1,10 @@
 var BaseController = require("./baseController"),
     fs = require("fs");
-//model = new (require("../models/ContentModel")),
+
+// Store the agent information.    
 let agents = {};
+
+// Stores the user information.
 let userPool = {};
 module.exports = BaseController.extend ({
     on : function(io, socket) {

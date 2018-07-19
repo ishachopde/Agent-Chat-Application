@@ -1,23 +1,14 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 let store = null;
 import {chatMiddleware} from './chat-middlerware';
-import userNameReducer from "./reducers/UserNameReducer";
+import userReducer from "./reducers/UserReducer";
 import chatsReducer from "./reducers/ChatsReducer";
 import chatBoardReducer from "./reducers/ChatBoardReducer";
 import AgentReducer from "./reducers/AgentReducer";
 import connectedUsersReducer from "./reducers/ConnectedUsers";
 export const configure = (initialState) => {
-    const actionTrackerReducer = function(state = "", action) {
-        switch (action.type) {
-            default :
-                return {
-                    action
-                };
-        }
-    };
-
     const appReducer = combineReducers({
-        user: userNameReducer,
+        user: userReducer,
         chatBoard: chatBoardReducer,
         chats: chatsReducer,
         agent: AgentReducer,

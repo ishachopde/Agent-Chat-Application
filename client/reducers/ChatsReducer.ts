@@ -1,8 +1,8 @@
-const uuidv4 = require('uuid/v4');
+import initialState from "../initialState";
 const chats = {
 
 };
-export default (state = chats, action) => {
+export default (state = initialState.chats, action) => {
     switch(action.type) {
         case 'message-sent':
             const receiverId = action.payload.message.receiverId;

@@ -9,26 +9,7 @@ import initialState from "./initialState";
 import startChat, {chatMiddleware} from './chat-middlerware';
  console.log(initialState);
 import { configure } from './store';
-const store = configure({
-    agent: {
-        name: "",
-        id: "",
-        isOnline: false,
-    },
-    user : {
-        name: "",
-        isAgent: false,
-        id: "",
-        isOnline: false,
-        onlineCount: 0,
-        offlineCount: 0
-    },
-    chatBoard: {
-        chatBoardId: ""
-    },
-    connectedUsers: [],
-    chats: {}
-});
+const store = configure(initialState);
 startChat(store);
 //startChat(store);
 const ROOT = document.querySelector(".container");

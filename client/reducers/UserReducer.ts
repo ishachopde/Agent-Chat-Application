@@ -1,12 +1,6 @@
-const userName = {
-    name: "",
-    isAgent: false,
-    id: "",
-    isOnline: false,
-    onlineCount: 0,
-    offlineCount: 0
-};
-export default (state = userName, action) => {
+import initialState from "../initialState";
+
+export default (state = initialState.user, action) => {
     switch(action.type) {
         case 'change-userinfo':
             return {
