@@ -19,7 +19,9 @@ var io = require('socket.io')(server);
 io.on('connection', function(socket) {
     require('../Controllers/chatController').on(io, socket);
 
-    socket.on('disconnect', function() {});
+    socket.on('disconnect', function() {
+        
+    });
 
 
 

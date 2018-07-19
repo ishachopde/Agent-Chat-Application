@@ -23,6 +23,7 @@ class UserChatClass extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
         const { user } = this.props;
+        // If user does not exists, take him to the home screen.
         if(!user.id) {
             this.props.history.push("/");
         }
@@ -42,7 +43,7 @@ class UserChatClass extends React.Component<IProps, IState> {
         if (!agent.id) {
             return (
                 <div>
-                    No Agent Assign to the user, please run the Agent first and run the app "/"
+                    No Agent Assign to the user, please run the Agent first and rerun the app.
                 </div>
             )
         }

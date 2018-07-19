@@ -362,7 +362,7 @@ class AgentChatClass extends React.Component {
             const inputMessages = this.state.inputMessages;
             inputMessages[userId] = e.target.value;
             if (e.target.value.length >= 1)
-                this.getSuggestions.call(this, e.target.value);
+                this.getSuggestions.call(this, e.target.value, userId);
             this.setState({
                 inputMessages
             });
@@ -376,7 +376,7 @@ class AgentChatClass extends React.Component {
             inputMessages: {},
             value: '',
             currentlyChattingUser: "",
-            suggestions: []
+            suggestions: {}
         };
     }
     render() {
@@ -409,6 +409,7 @@ class AgentChatClass extends React.Component {
                 boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;
             }
             const activeChatBorder = (currentlyChattingUser === activeChat.id) ? `4px solid ${backgroundColor}` : "";
+            const suggestions = (this.state.suggestions[activeChat.id]) ? this.state.suggestions[activeChat.id] : [];
             return (React.createElement("div", { key: index, className: "msg_box", style: { left: left, animation: boxAnimation, border: activeChatBorder } },
                 React.createElement("div", { className: "msg_head" },
                     React.createElement("div", { className: "chat-timer", style: { background: backgroundColor } },
@@ -421,7 +422,7 @@ class AgentChatClass extends React.Component {
                         React.createElement("div", { className: "msg_push" },
                             React.createElement(Chats_1.Chats, { chats: chats[activeChat.id], user: user, backgroundColor: backgroundColor }))),
                     React.createElement("div", { className: "msg_footer" },
-                        React.createElement(AISuggestions_1.default, { userId: activeChat.id, results: this.state.suggestions, onSuggestionClick: this.onSuggestionClick.bind(this) }),
+                        React.createElement(AISuggestions_1.default, { userId: activeChat.id, results: suggestions, onSuggestionClick: this.onSuggestionClick.bind(this) }),
                         React.createElement("div", { className: "msg_footer_info_box" }, (!activeChat.isOnline) ? "User disconnected" : ""),
                         React.createElement("textarea", { value: inputMessage, placeholder: "Type a message..", className: "msg_input", disabled: !activeChat.isOnline, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onFocus: () => this.onInputFocused(activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), onBlur: this.inInputBlurred.bind(this), rows: 4 })))));
         });
@@ -454,11 +455,13 @@ class AgentChatClass extends React.Component {
             ev.preventDefault();
         }
     }
-    getSuggestions(newValue) {
+    getSuggestions(newValue, userId) {
         AiSuggestionApi_1.getSuggestions(newValue)
             .then(({ data }) => {
+            const suggestions = this.state.suggestions;
+            suggestions[userId] = data;
             this.setState({
-                suggestions: data
+                suggestions: suggestions
             });
         });
     }
@@ -473,12 +476,13 @@ class AgentChatClass extends React.Component {
             }, 1000);
         }
     }
-    onSuggestionClick(suggestion, userId) {
-        const inputMessages = this.state.inputMessages;
+    onSuggestionClick(userId, suggestion) {
+        const { inputMessages, suggestions } = this.state;
         inputMessages[userId] = suggestion;
+        delete suggestions[userId];
         this.setState({
             inputMessages,
-            suggestions: []
+            suggestions: suggestions
         });
     }
     componentWillUnmount() {
@@ -585,7 +589,7 @@ class UserChatClass extends React.Component {
     render() {
         const { agent, user, chatBoard, chats } = this.props;
         if (!agent.id) {
-            return (React.createElement("div", null, "No Agent Assign to the user, please run the Agent first and run the app \"/\""));
+            return (React.createElement("div", null, "No Agent Assign to the user, please run the Agent first and rerun the app."));
         }
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
@@ -711,7 +715,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 __webpack_require__(/*! ../../resources/styles/components/common/AISuggestions.scss */ "./client/resources/styles/components/common/AISuggestions.scss");
 const Suggestions = ({ userId, results, onSuggestionClick }) => {
-    const options = results.map((suggestion, index) => (React.createElement("li", { key: index, onClick: (ev) => onSuggestionClick(suggestion[`suggestion ${index}`], userId) }, suggestion[`suggestion ${index}`])));
+    const options = results.map((suggestion, index) => (React.createElement("li", { key: index, onClick: (ev) => onSuggestionClick(userId, suggestion[`suggestion ${index}`], userId) }, suggestion[`suggestion ${index}`])));
     return React.createElement("ul", { className: "suggestions" }, options);
 };
 exports.default = Suggestions;
@@ -839,7 +843,7 @@ class HeaderClass extends React.Component {
         const statusDropDownClass = (isOnline) ? "border-online" : "border-offline";
         return (React.createElement("div", { className: "header" },
             React.createElement("a", { href: "#default", className: "logo" },
-                "Front End Challenge - $",
+                "Front End Challenge - ",
                 name),
             React.createElement("div", { className: "headerrightitems" },
                 React.createElement("div", { className: `selectWrapper ${statusDropDownClass}` },
@@ -881,6 +885,7 @@ exports.Header = react_redux_1.connect(mapStateToProps)(HeaderClass);
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const Colors_1 = __webpack_require__(/*! ../../utils/Colors */ "./client/utils/Colors.ts");
+__webpack_require__(/*! ../../resources/styles/components/common/HorizontalUserLIst.scss */ "./client/resources/styles/components/common/HorizontalUserLIst.scss");
 class HorizontalUserList extends React.Component {
     constructor(props) {
         super(props);
@@ -923,7 +928,6 @@ const App_1 = __webpack_require__(/*! ./components/App */ "./client/components/A
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 const initialState_1 = __webpack_require__(/*! ./initialState */ "./client/initialState.ts");
 const chat_middlerware_1 = __webpack_require__(/*! ./chat-middlerware */ "./client/chat-middlerware.ts");
-console.log(initialState_1.default);
 const store_1 = __webpack_require__(/*! ./store */ "./client/store.ts");
 const store = store_1.configure(initialState_1.default);
 chat_middlerware_1.default(store);
@@ -1274,6 +1278,36 @@ if(false) {}
 
 
 var content = __webpack_require__(/*! !../../../../../node_modules/css-loader!../../../../../node_modules/sass-loader/lib/loader.js!./Header.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/common/Header.scss");
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(/*! ../../../../../node_modules/style-loader/lib/addStyles.js */ "./node_modules/style-loader/lib/addStyles.js")(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {}
+
+/***/ }),
+
+/***/ "./client/resources/styles/components/common/HorizontalUserLIst.scss":
+/*!***************************************************************************!*\
+  !*** ./client/resources/styles/components/common/HorizontalUserLIst.scss ***!
+  \***************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(/*! !../../../../../node_modules/css-loader!../../../../../node_modules/sass-loader/lib/loader.js!./HorizontalUserLIst.scss */ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/common/HorizontalUserLIst.scss");
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -5379,7 +5413,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "body {\n  background-color: #F9FAFE; }\n\n.react-autosuggest__container {\n  position: relative; }\n\n.react-autosuggest__input {\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.react-autosuggest__input--focused {\n  outline: none; }\n\n.react-autosuggest__input--open {\n  border-bottom-left-radius: 0;\n  border-bottom-right-radius: 0; }\n\n.react-autosuggest__suggestions-container {\n  display: none; }\n\n.react-autosuggest__suggestions-container--open {\n  display: block;\n  position: absolute;\n  bottom: 51px;\n  width: 448px;\n  border: 1px solid #aaa;\n  background-color: #fff;\n  font-family: Helvetica, sans-serif;\n  font-weight: 300;\n  font-size: 16px;\n  border-bottom-left-radius: 4px;\n  border-bottom-right-radius: 4px;\n  z-index: 2; }\n\n.react-autosuggest__suggestions-list {\n  margin: 0;\n  padding: 0;\n  list-style-type: none; }\n\n.react-autosuggest__suggestion {\n  cursor: pointer;\n  padding: 10px 20px; }\n\n.react-autosuggest__suggestion--highlighted {\n  background-color: #ddd; }\n", ""]);
+exports.push([module.i, "body {\n  background-color: #F9FAFE; }\n", ""]);
 
 // exports
 
@@ -5417,7 +5451,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 4px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 4px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 4px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 4px solid #3D9CC4; } }\n\ndiv.scrollmenu {\n  overflow: auto;\n  white-space: nowrap; }\n\n@keyframes blink-alert {\n  50% {\n    border: 4px solid #D43245; } }\n\ndiv.scrollmenu span {\n  display: inline-block;\n  margin: 5px 10px;\n  height: 60px;\n  width: 60px;\n  line-height: 60px;\n  -moz-border-radius: 30px;\n  border-radius: 30px;\n  color: white;\n  text-align: center;\n  font-size: 2em; }\n\ndiv.scrollmenu a {\n  display: inline-block;\n  color: white;\n  text-align: center;\n  padding: 14px;\n  text-decoration: none; }\n\ndiv.scrollmenu a:hover {\n  background-color: #777; }\n\n.scrollview-header {\n  margin-left: 10px;\n  font-size: 20px; }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 15px 15px 0px 0px;\n  margin-left: 30px;\n  margin-right: 30px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  padding: 5px;\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
+exports.push([module.i, "@-webkit-keyframes blink-CB6080 {\n  50% {\n    border: 4px solid #CB6080; } }\n\n@-webkit-keyframes blink-0AA693 {\n  50% {\n    border: 4px solid #0AA693; } }\n\n@-webkit-keyframes blink-966AB8 {\n  50% {\n    border: 4px solid #966AB8; } }\n\n@-webkit-keyframes blink-3D9CC4 {\n  50% {\n    border: 4px solid #3D9CC4; } }\n\n.msg_box {\n  position: fixed;\n  bottom: -5px;\n  width: 448px;\n  background: #ECF2F9;\n  border-radius: 15px 15px 0px 0px;\n  margin-left: 30px;\n  margin-right: 30px; }\n\n.msg_head {\n  height: 30px;\n  background: #ECF2F9;\n  border-radius: 5px 5px 0 0;\n  color: #fff;\n  cursor: pointer;\n  padding: 10px 24px;\n  border-bottom: 1px solid #D4D9DF; }\n\n.msg_head h4 {\n  text-align: center;\n  vertical-align: middle;\n  font-size: 25px;\n  font-weight: lighter;\n  font-family: sans-serif;\n  color: black;\n  text-align: center;\n  margin: 0px !important; }\n\n.msg_body {\n  height: 300px !important;\n  font-size: 12px;\n  padding: 15px;\n  overflow: auto;\n  overflow-x: hidden; }\n\n.msg_input {\n  padding: 5px;\n  width: 100%;\n  height: 55px;\n  border: 2px solid #E7EDF3;\n  border-radius: 15px 15px 0px 0px;\n  -webkit-box-sizing: border-box;\n  -moz-box-sizing: border-box;\n  box-sizing: border-box; }\n\n.msg_footer_info_box {\n  text-align: center;\n  padding: 5px; }\n\n.close {\n  float: right;\n  cursor: pointer; }\n\n.minimize {\n  float: right;\n  cursor: pointer;\n  padding-right: 5px; }\n\n.msg-left p {\n  margin: 0px !important; }\n\n.msg-left {\n  position: relative;\n  background: white;\n  padding: 7px 12px 8px 12px;\n  min-height: 10px;\n  margin-bottom: 5px;\n  margin-right: 15%;\n  border-radius: 5px;\n  word-break: break-all;\n  font-size: 14px;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.last-msg-time {\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-left {\n  text-align: left;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.last-msg-time-right {\n  text-align: right;\n  font-size: 10px;\n  font-weight: regular;\n  color: #8d8d8d;\n  padding-top: 3px;\n  padding-bottom: 9px; }\n\n.msg-right {\n  margin-left: 15%;\n  text-align: right;\n  padding: 7px 12px 8px 12px;\n  min-height: 15px;\n  margin-bottom: 5px;\n  position: relative;\n  word-break: break-all;\n  font-size: 14px;\n  color: white;\n  font-family: sans-serif;\n  border-radius: 15px;\n  box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.05); }\n\n.msg-right p {\n  margin: 0px !important; }\n\n.chat-timer {\n  float: left;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  color: black;\n  display: table; }\n\n.chat-timer span {\n  display: table-cell;\n  vertical-align: middle;\n  text-align: center;\n  font-size: 13px;\n  font-weight: bold;\n  color: white; }\n", ""]);
 
 // exports
 
@@ -5456,6 +5490,25 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 // module
 exports.push([module.i, "ul.menu-list {\n  display: flex;\n  margin: 0;\n  padding: 0 30px;\n  background: black;\n  list-style: none; }\n  ul.menu-list > li {\n    padding: 0 4px;\n    margin: 13px 0 9px; }\n    ul.menu-list > li a,\n    ul.menu-list > li div {\n      float: left;\n      color: white;\n      line-height: 16px; }\n    ul.menu-list > li a,\n    ul.menu-list > li a:hover {\n      cursor: pointer;\n      text-decoration: none; }\n    ul.menu-list > li.title {\n      font-weight: bold; }\n    ul.menu-list > li.selected > a {\n      font-weight: bold;\n      color: blue; }\n    ul.menu-list > li.separated {\n      border-left: 1px solid #3d526c;\n      padding-left: 9px;\n      margin-left: 9px; }\n    ul.menu-list > li.ml-auto {\n      margin-left: auto; }\n\ndiv.header-logo {\n  background-size: auto;\n  background-repeat: no-repeat;\n  background-position: center;\n  height: 20px;\n  width: 50px;\n  color: transparent; }\n\nselect.status {\n  margin-top: 10px;\n  background: #F9FAFE;\n  border: 2px solid #A3ABB3;\n  border-radius: 15px; }\n  select.status select.status:hover {\n    background: #E7EDF3; }\n\n.header {\n  overflow: hidden; }\n\n.header a {\n  float: left;\n  color: black;\n  text-align: center;\n  padding: 12px;\n  text-decoration: none;\n  font-size: 18px;\n  line-height: 25px;\n  border-radius: 4px; }\n\n.header a.logo {\n  font-size: 25px;\n  font-weight: bold; }\n\n.header a:hover {\n  background-color: #ddd;\n  color: black; }\n\n.header a.active {\n  background-color: dodgerblue;\n  color: white; }\n\n.header-right {\n  float: right; }\n\n@media screen and (max-width: 500px) {\n  .header a {\n    float: none;\n    display: block;\n    text-align: left; }\n  .header-right {\n    float: none; } }\n\n.headerrightitems {\n  padding: 15px; }\n\n.headertimers12 {\n  border: 1px solid #D4D9DE;\n  width: 250px;\n  overflow: hidden;\n  float: right;\n  border-radius: 15px;\n  margin-right: 15px;\n  font-size: 13px;\n  height: 20px; }\n\n.headertimers12 .header-timer-divs {\n  display: flex; }\n\n.headertimers12 .header-timer-divs div:first-child {\n  border-right: 1px solid #D4D9DE; }\n\n.headertimers12 .header-timer-divs div {\n  width: 50%;\n  padding-left: 5%;\n  padding-top: 2px; }\n\n.selectWrapper {\n  float: right;\n  border-radius: 36px;\n  overflow: hidden;\n  background: #cccccc; }\n\n.border-online {\n  border: 2px solid #02A626; }\n\n.border-offline {\n  border: 2px solid #D43245; }\n\n.selectBox {\n  width: 140px;\n  border: 0px;\n  outline: none; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/index.js!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/common/HorizontalUserLIst.scss":
+/*!**********************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader!./node_modules/sass-loader/lib/loader.js!./client/resources/styles/components/common/HorizontalUserLIst.scss ***!
+  \**********************************************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/css-loader/lib/css-base.js */ "./node_modules/css-loader/lib/css-base.js")(false);
+// imports
+
+
+// module
+exports.push([module.i, "div.scrollmenu {\n  overflow: auto;\n  white-space: nowrap; }\n\n@keyframes blink-alert {\n  50% {\n    border: 4px solid #D43245; } }\n\ndiv.scrollmenu span {\n  display: inline-block;\n  margin: 5px 10px;\n  height: 60px;\n  width: 60px;\n  line-height: 60px;\n  -moz-border-radius: 30px;\n  border-radius: 30px;\n  color: white;\n  text-align: center;\n  font-size: 2em; }\n\ndiv.scrollmenu a {\n  display: inline-block;\n  color: white;\n  text-align: center;\n  padding: 14px;\n  text-decoration: none; }\n\ndiv.scrollmenu a:hover {\n  background-color: #777; }\n\n.scrollview-header {\n  margin-left: 10px;\n  font-size: 20px; }\n", ""]);
 
 // exports
 

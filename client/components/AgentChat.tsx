@@ -45,7 +45,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
             inputMessages: {},
             value: '',
             currentlyChattingUser: "",
-            suggestions: []
+            suggestions: {}
         }
     }
 
@@ -88,6 +88,8 @@ class AgentChatClass extends React.Component<IProps, IState> {
             }
 
             const activeChatBorder = (currentlyChattingUser === activeChat.id) ? `4px solid ${backgroundColor}` : "";
+
+            const suggestions = (this.state.suggestions[activeChat.id]) ? this.state.suggestions[activeChat.id] : [];
             return (
                 <div key={index}  className="msg_box" style={{ left: left, animation: boxAnimation, border: activeChatBorder }}>
                     <div className="msg_head">
@@ -104,7 +106,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
                             </div>
                         </div><div className="msg_footer">
 
-                            <Suggestions userId={activeChat.id} results={this.state.suggestions} onSuggestionClick={this.onSuggestionClick.bind(this)} />
+                            <Suggestions userId={activeChat.id} results={suggestions} onSuggestionClick={this.onSuggestionClick.bind(this)} />
                             <div className="msg_footer_info_box">
                                 {
                                     (!activeChat.isOnline) ? "User disconnected" : ""
@@ -142,7 +144,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
         inputMessages[userId] = e.target.value;
 
         if (e.target.value.length >= 1)
-            this.getSuggestions.call(this, e.target.value);
+            this.getSuggestions.call(this, e.target.value, userId);
         this.setState({
             inputMessages
         })
@@ -169,11 +171,13 @@ class AgentChatClass extends React.Component<IProps, IState> {
         }
     }
 
-    private getSuggestions(newValue) {
+    private getSuggestions(newValue, userId) {
         getSuggestions(newValue)
             .then(({ data }) => {
+                const suggestions = this.state.suggestions;
+                suggestions[userId] = data;
                 this.setState({
-                    suggestions: data
+                    suggestions: suggestions
                 })
             });
     }
@@ -191,13 +195,14 @@ class AgentChatClass extends React.Component<IProps, IState> {
         }
     }
 
-    private onSuggestionClick(suggestion, userId) {
-        const inputMessages = this.state.inputMessages;
+    private onSuggestionClick(userId, suggestion) {
+        const { inputMessages, suggestions } = this.state;
         inputMessages[userId] = suggestion;
+        delete suggestions[userId];
         this.setState({
             inputMessages,
-            suggestions: []
-        })
+            suggestions: suggestions
+        });
     }
 
     componentWillUnmount() {
