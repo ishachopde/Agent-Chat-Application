@@ -1,5 +1,6 @@
 /*
  * Configuration file for easy deployment.
+ * @author  Isha CHopde
  */
 
 var config = {

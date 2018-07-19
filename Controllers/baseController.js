@@ -2,7 +2,7 @@
  * Base Controller
  * @author  Isha CHopde
  */
-var _ = require("underscore");
+const _ = require("underscore");
 module.exports = {
     name: "base",
     extend: function(child) {

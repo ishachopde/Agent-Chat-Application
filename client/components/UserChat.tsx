@@ -1,3 +1,7 @@
+/**
+ * Component to render user chat functionality.
+ * @author  Isha CHopde
+ */
 import * as React from "react";
 import { sendMessageToAgent } from "../actions/messageActions";
 import { getStore } from '../store';

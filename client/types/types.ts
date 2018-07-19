@@ -1,3 +1,8 @@
+/**
+ * Typescript types definitions for different objects.
+ * @author  Isha CHopde
+ */
+
 export interface user_types {
     name: string;
     isAgent: boolean;

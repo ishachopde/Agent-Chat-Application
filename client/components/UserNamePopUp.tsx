@@ -1,3 +1,8 @@
+/**
+ * UserName popup page component.
+ * Displays Username and isAgent Checkbox.
+ * @author  Isha CHopde
+ */
 
 import * as React from "react";
 import "../resources/styles/components/UserNamePopUp.scss";

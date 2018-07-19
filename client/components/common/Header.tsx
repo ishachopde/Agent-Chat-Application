@@ -1,5 +1,9 @@
+
+/**
+ * Component to display header.
+ * @author  Isha CHopde
+ */
 import * as React from "react";
-import {Link} from "react-router-dom";
 import { connect } from 'react-redux';
 import "../../resources/styles/components/common/Header.scss";
 import { changeOnlineCounter, changeOfflineCounter, setUserOnlineStatus } from "../../actions/userActions";

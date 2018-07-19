@@ -1,3 +1,9 @@
+
+/**
+ * Component displays page related to agent chat window screen.
+ * @author  Isha CHopde
+ */
+
 import * as React from "react";
 import { sendMessageToAgent } from "../actions/messageActions";
 import { changeLastMessageReceivedCounter, setActiveUser } from "../actions/userActions";

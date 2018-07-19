@@ -1,3 +1,8 @@
+/**
+ * User reducer for redux store..
+ * @author  Isha CHopde
+ */
+
 import initialState from "../initialState";
 
 export default (state = initialState.user, action) => {

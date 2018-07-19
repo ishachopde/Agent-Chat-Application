@@ -1,3 +1,8 @@
+/**
+ * Connected Users reducer for redux store..
+ * @author  Isha CHopde
+ */
+
 import initialState from "../initialState";
 
 export default (state = initialState.connectedUsers, action) => {

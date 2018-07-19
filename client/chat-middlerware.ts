@@ -1,6 +1,11 @@
+/**
+ * Redux middler ware to handle socket related operations.
+ * @author  Isha CHopde
+ */
+
 import * as io from 'socket.io-client';
  
-var socket = null;
+let socket = null;
 import { agentAssigned, userConnected, setConnectedUsersOnlineStatus, setAgentOnlineStatus } from "./actions/userActions";
 import { messageReceive } from "./actions/messageActions";
 export function chatMiddleware(store) {

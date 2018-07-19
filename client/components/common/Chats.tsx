@@ -1,3 +1,9 @@
+
+/**
+ * Component to display user chat messages.
+ * @author  Isha CHopde
+ */
+
 import * as React from "react";
 import {user_types, chats_types} from '../../types/types';
 interface IProps {

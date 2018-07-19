@@ -1,3 +1,8 @@
+/**
+ * reducer to handle actions related to Chats.
+ * @author  Isha CHopde
+ */
+
 import initialState from "../initialState";
 
 export default (state = initialState.chats, action) => {

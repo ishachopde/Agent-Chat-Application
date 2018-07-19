@@ -1,5 +1,9 @@
-var express = require('express');
-var router = express.Router();
+/*
+ * Defines routes for the app.
+ * @author  Isha CHopde
+ */
+const express = require('express');
+const router = express.Router();
 
 /* GET home page. */
 router.get('/', function(req, res, next) {

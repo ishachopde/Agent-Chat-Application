@@ -1,3 +1,9 @@
+
+/**
+ * Component to display horizontal user list..
+ * @author  Isha CHopde
+ */
+
 import * as React from 'react'
 import { Colors as backgroundColors} from "../../utils/Colors";
 import "../../resources/styles/components/common/HorizontalUserLIst.scss";

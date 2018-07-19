@@ -1,3 +1,8 @@
+/**
+ * Create redux store with provided reducers.
+ * @author  Isha CHopde
+ */
+
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 let store = null;
 import {chatMiddleware} from './chat-middlerware';

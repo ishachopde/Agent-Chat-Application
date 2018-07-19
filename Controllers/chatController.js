@@ -1,4 +1,8 @@
-var BaseController = require("./baseController"),
+/*
+ * Controller to handle socket request related to Chat
+ * @author  Isha CHopde
+ */
+const BaseController = require("./baseController"),
     fs = require("fs");
 
 // Store the agent information.    

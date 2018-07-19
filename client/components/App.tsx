@@ -1,4 +1,8 @@
 
+/**
+ * Component to setup routing for application..
+ * @author  Isha CHopde
+ */
 import * as React from "react";
 import { HashRouter, Route, Switch, Redirect} from "react-router-dom";
 import { UserChat } from "./UserChat";

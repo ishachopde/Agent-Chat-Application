@@ -1,3 +1,8 @@
+/**
+ * Initial state of the store.
+ * @author  Isha CHopde
+ */
+
 export default {
     agent: {
         userName: "",
