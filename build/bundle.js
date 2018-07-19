@@ -348,9 +348,10 @@ __webpack_require__(/*! ../resources/styles/components/chat/ChatBox.scss */ "./c
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 const AISuggestions_1 = __webpack_require__(/*! ./common/AISuggestions */ "./client/components/common/AISuggestions.tsx");
-const Chats_1 = __webpack_require__(/*! ./Chats */ "./client/components/Chats.tsx");
+const Chats_1 = __webpack_require__(/*! ./common/Chats */ "./client/components/common/Chats.tsx");
+const HorizontalUserLIst_1 = __webpack_require__(/*! ./common/HorizontalUserLIst */ "./client/components/common/HorizontalUserLIst.tsx");
 const AiSuggestionApi_1 = __webpack_require__(/*! ../apis/AiSuggestionApi */ "./client/apis/AiSuggestionApi.ts");
-const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"];
+const Colors_1 = __webpack_require__(/*! ../utils/Colors */ "./client/utils/Colors.ts");
 class AgentChatClass extends React.Component {
     constructor(props) {
         super(props);
@@ -366,7 +367,10 @@ class AgentChatClass extends React.Component {
                 inputMessages
             });
         };
-        const { connectedUsers } = this.props;
+        const { connectedUsers, user } = this.props;
+        if (!user.id) {
+            this.props.history.push("/");
+        }
         this.state = {
             activeChats: [],
             inputMessages: {},
@@ -381,23 +385,8 @@ class AgentChatClass extends React.Component {
         const inactiveChats = this.props.connectedUsers.slice(maxActiveChats, this.props.connectedUsers.length);
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
-            this.renderHorizontalOnlineUsers.call(this, maxActiveChats, inactiveChats),
+            React.createElement(HorizontalUserLIst_1.HorizontalUserList, { maxActiveChats: maxActiveChats, inactiveChats: inactiveChats, setActiveUser: this.setActiveUser.bind(this) }),
             this.renderActiveChats.call(this, maxActiveChats, activeChats)));
-    }
-    renderHorizontalOnlineUsers(maxActiveChats, inactiveChats) {
-        if (inactiveChats.length === 0)
-            return "";
-        return (React.createElement("div", null,
-            React.createElement("div", { className: "scrollview-header" }, "Online Users"),
-            React.createElement("div", { className: "scrollmenu" }, inactiveChats.map((inactiveChat, index) => {
-                const backgroundColor = backgroundColors[index % maxActiveChats];
-                let boxAnimation = "none";
-                if (inactiveChat.lastMessageTimer > 60) {
-                    boxAnimation = `blink-alert .5s step-end infinite alternate`;
-                }
-                return (React.createElement("span", { onClick: (ev) => this.setActiveUser.call(this, inactiveChat.id), key: index, style: { background: backgroundColor, animation: boxAnimation } },
-                    React.createElement("div", null, inactiveChat.name.substring(0, 1))));
-            }))));
     }
     renderActiveChats(maxActiveChats, activeChats) {
         const { chats, user } = this.props;
@@ -414,7 +403,7 @@ class AgentChatClass extends React.Component {
                 }
             }
             const left = (index * this.chatWindowWidth) + (index + 1) * this.marginBetweenTwoChatWindows;
-            const backgroundColor = backgroundColors[index % maxActiveChats];
+            const backgroundColor = Colors_1.Colors[index % maxActiveChats];
             let boxAnimation = "none";
             if (activeChat.lastMessageTimer > 60) {
                 boxAnimation = `blink-${backgroundColor.replace("#", "")} .5s step-end infinite alternate`;
@@ -434,13 +423,36 @@ class AgentChatClass extends React.Component {
                     React.createElement("div", { className: "msg_footer" },
                         React.createElement(AISuggestions_1.default, { userId: activeChat.id, results: this.state.suggestions, onSuggestionClick: this.onSuggestionClick.bind(this) }),
                         React.createElement("div", { className: "msg_footer_info_box" }, (!activeChat.isOnline) ? "User disconnected" : ""),
-                        React.createElement("textarea", { value: inputMessage, placeholder: "Type a message..", className: "msg_input", disabled: !activeChat.isOnline, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onFocus: () => this.onInputFocused(activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), rows: 4 })))));
+                        React.createElement("textarea", { value: inputMessage, placeholder: "Type a message..", className: "msg_input", disabled: !activeChat.isOnline, onKeyPress: (ev) => this.handleKeyPress(ev, user.id, activeChat.id), onFocus: () => this.onInputFocused(activeChat.id), onChange: (ev) => this.handleMessageChange.call(this, ev, activeChat.id), onBlur: this.inInputBlurred.bind(this), rows: 4 })))));
         });
     }
     onInputFocused(userId) {
         this.setState({
             currentlyChattingUser: userId
         });
+    }
+    inInputBlurred() {
+        this.setState({
+            currentlyChattingUser: ""
+        });
+    }
+    handleKeyPress(ev, senderId, receiverId) {
+        const { inputMessages } = this.state;
+        const message = (inputMessages[receiverId] ? inputMessages[receiverId] : "");
+        if (ev.which === 13) {
+            const store = store_1.getStore();
+            store.dispatch(messageActions_1.sendMessageToAgent({
+                senderId,
+                receiverId,
+                message
+            }));
+            const inputMessages = this.state.inputMessages;
+            inputMessages[receiverId] = "";
+            this.setState({
+                inputMessages
+            });
+            ev.preventDefault();
+        }
     }
     getSuggestions(newValue) {
         AiSuggestionApi_1.getSuggestions(newValue)
@@ -476,24 +488,6 @@ class AgentChatClass extends React.Component {
     }
     setActiveUser(userId) {
         this.props.dispatch(userActions_1.setActiveUser(userId));
-    }
-    handleKeyPress(ev, senderId, receiverId) {
-        const { inputMessages } = this.state;
-        const message = (inputMessages[receiverId] ? inputMessages[receiverId] : "");
-        if (ev.which === 13) {
-            const store = store_1.getStore();
-            store.dispatch(messageActions_1.sendMessageToAgent({
-                senderId,
-                receiverId,
-                message
-            }));
-            const inputMessages = this.state.inputMessages;
-            inputMessages[receiverId] = "";
-            this.setState({
-                inputMessages
-            });
-            ev.preventDefault();
-        }
     }
     formatSeconds(totalSeconds) {
         const seconds = totalSeconds % 60;
@@ -555,47 +549,6 @@ exports.App = App;
 
 /***/ }),
 
-/***/ "./client/components/Chats.tsx":
-/*!*************************************!*\
-  !*** ./client/components/Chats.tsx ***!
-  \*************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-class Chats extends React.Component {
-    constructor(props) {
-        super(props);
-    }
-    render() {
-        const { chats, user, backgroundColor } = this.props;
-        if (!chats) {
-            return "";
-        }
-        const renderChats = chats.map((message, index) => {
-            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
-            if (message.senderId === user.id)
-                return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-right", style: { background: backgroundColor } },
-                        React.createElement("p", null, message.message)),
-                    messageTime));
-            else
-                return (React.createElement("div", { key: index },
-                    React.createElement("div", { className: "msg-left" },
-                        React.createElement("p", null, message.message)),
-                    messageTime));
-        });
-        return (React.createElement("div", { className: "chat-history" }, renderChats));
-    }
-}
-exports.Chats = Chats;
-
-
-/***/ }),
-
 /***/ "./client/components/UserChat.tsx":
 /*!****************************************!*\
   !*** ./client/components/UserChat.tsx ***!
@@ -612,7 +565,7 @@ const store_1 = __webpack_require__(/*! ../store */ "./client/store.ts");
 __webpack_require__(/*! ../resources/styles/components/chat/ChatBox.scss */ "./client/resources/styles/components/chat/ChatBox.scss");
 const Header_1 = __webpack_require__(/*! ./common/Header */ "./client/components/common/Header.tsx");
 const react_redux_1 = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
-const Chats_1 = __webpack_require__(/*! ./Chats */ "./client/components/Chats.tsx");
+const Chats_1 = __webpack_require__(/*! ./common/Chats */ "./client/components/common/Chats.tsx");
 class UserChatClass extends React.Component {
     constructor(props) {
         super(props);
@@ -621,6 +574,10 @@ class UserChatClass extends React.Component {
                 message: e.target.value
             });
         };
+        const { user } = this.props;
+        if (!user.id) {
+            this.props.history.push("/");
+        }
         this.state = {
             message: "",
         };
@@ -628,7 +585,7 @@ class UserChatClass extends React.Component {
     render() {
         const { agent, user, chatBoard, chats } = this.props;
         if (!agent.id) {
-            return (React.createElement("div", null, "Waiting for agent....."));
+            return (React.createElement("div", null, "No Agent Assign to the user, please run the Agent first and run the app \"/\""));
         }
         return (React.createElement("div", null,
             React.createElement(Header_1.Header, null),
@@ -762,6 +719,47 @@ exports.default = Suggestions;
 
 /***/ }),
 
+/***/ "./client/components/common/Chats.tsx":
+/*!********************************************!*\
+  !*** ./client/components/common/Chats.tsx ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+class Chats extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        const { chats, user, backgroundColor } = this.props;
+        if (!chats) {
+            return "";
+        }
+        const renderChats = chats.map((message, index) => {
+            const messageTime = (index === chats.length - 1) ? (React.createElement("div", { className: "last-msg-time" }, "Just now")) : "";
+            if (message.senderId === user.id)
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-right", style: { background: backgroundColor } },
+                        React.createElement("p", null, message.message)),
+                    messageTime));
+            else
+                return (React.createElement("div", { key: index },
+                    React.createElement("div", { className: "msg-left" },
+                        React.createElement("p", null, message.message)),
+                    messageTime));
+        });
+        return (React.createElement("div", { className: "chat-history" }, renderChats));
+    }
+}
+exports.Chats = Chats;
+
+
+/***/ }),
+
 /***/ "./client/components/common/Header.tsx":
 /*!*********************************************!*\
   !*** ./client/components/common/Header.tsx ***!
@@ -837,10 +835,12 @@ class HeaderClass extends React.Component {
         }
     }
     render() {
-        const { onlineCount, offlineCount, isOnline } = this.props.user;
+        const { onlineCount, offlineCount, isOnline, name } = this.props.user;
         const statusDropDownClass = (isOnline) ? "border-online" : "border-offline";
         return (React.createElement("div", { className: "header" },
-            React.createElement("a", { href: "#default", className: "logo" }, "Front End Challenge"),
+            React.createElement("a", { href: "#default", className: "logo" },
+                "Front End Challenge - $",
+                name),
             React.createElement("div", { className: "headerrightitems" },
                 React.createElement("div", { className: `selectWrapper ${statusDropDownClass}` },
                     React.createElement("select", { className: "selectBox", onChange: this.changeStatusChange.bind(this) },
@@ -865,6 +865,44 @@ const mapStateToProps = state => {
     };
 };
 exports.Header = react_redux_1.connect(mapStateToProps)(HeaderClass);
+
+
+/***/ }),
+
+/***/ "./client/components/common/HorizontalUserLIst.tsx":
+/*!*********************************************************!*\
+  !*** ./client/components/common/HorizontalUserLIst.tsx ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+const Colors_1 = __webpack_require__(/*! ../../utils/Colors */ "./client/utils/Colors.ts");
+class HorizontalUserList extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        const { inactiveChats, maxActiveChats, setActiveUser } = this.props;
+        if (inactiveChats.length === 0)
+            return "";
+        return (React.createElement("div", null,
+            React.createElement("div", { className: "scrollview-header" }, "Online Users"),
+            React.createElement("div", { className: "scrollmenu" }, inactiveChats.map((inactiveChat, index) => {
+                const backgroundColor = Colors_1.Colors[index % maxActiveChats];
+                let boxAnimation = "none";
+                if (inactiveChat.lastMessageTimer > 60) {
+                    boxAnimation = `blink-alert .5s step-end infinite alternate`;
+                }
+                return (React.createElement("span", { onClick: (ev) => setActiveUser(inactiveChat.id), key: index, style: { background: backgroundColor, animation: boxAnimation } },
+                    React.createElement("div", null, inactiveChat.name.substring(0, 1))));
+            }))));
+    }
+}
+exports.HorizontalUserList = HorizontalUserList;
 
 
 /***/ }),
@@ -918,7 +956,8 @@ exports.default = {
         id: "",
         isOnline: false,
         onlineCount: 0,
-        offlineCount: 0
+        offlineCount: 0,
+        lastMessageTimer: 0
     },
     chatBoard: {
         chatBoardId: ""
@@ -1288,6 +1327,21 @@ exports.configure = (initialState) => {
 exports.getStore = () => {
     return store;
 };
+
+
+/***/ }),
+
+/***/ "./client/utils/Colors.ts":
+/*!********************************!*\
+  !*** ./client/utils/Colors.ts ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Colors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"];
 
 
 /***/ }),

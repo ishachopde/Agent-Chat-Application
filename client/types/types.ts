@@ -5,6 +5,7 @@ export interface user_types {
     isOnline: boolean;
     onlineCount: number;
     offlineCount: number;
+    lastMessageTimer: number;
 }
 
 export interface chatBoard_types {

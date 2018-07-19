@@ -6,10 +6,11 @@ import "../resources/styles/components/chat/ChatBox.scss";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
 import Suggestions from './common/AISuggestions';
-import { Chats } from './Chats';
+import { Chats } from './common/Chats';
+import { HorizontalUserList } from './common/HorizontalUserLIst';
 import {user_types, chatBoard_types, chats_types, connected_users_types} from '../types/types';
 import {getSuggestions} from '../apis/AiSuggestionApi';
-const backgroundColors = ["#CB6080", "#0AA693", "#966AB8", "#3D9CC4"]
+import { Colors as backgroundColors} from "../utils/Colors";
 
 interface IProps {
     user: user_types;
@@ -17,6 +18,7 @@ interface IProps {
     connectedUsers: Array<user_types>;
     chats: chats_types;
     dispatch?
+    history?
 }
 
 interface IState {
@@ -28,13 +30,16 @@ interface IState {
 }
 
 class AgentChatClass extends React.Component<IProps, IState> {
-    private onSuggestionsUpdateRequested;
     private lastMessageTimers = {};
     private chatWindowWidth = 448;
     private marginBetweenTwoChatWindows = 12;
     constructor(props: IProps) {
         super(props);
-        const { connectedUsers } = this.props;
+        const { connectedUsers, user } = this.props;
+        // If user does not exists, take him to the home screen.
+        if(!user.id) {
+            this.props.history.push("/");
+        }
         this.state = {
             activeChats: [],
             inputMessages: {},
@@ -45,44 +50,19 @@ class AgentChatClass extends React.Component<IProps, IState> {
     }
 
     public render() {
+        /* This calculations can be done in constructor for faster perfomance, but for the demo 
+        with different screen Sizes calculating every time. */
         const maxActiveChats = this.calculateNumberOfChats(window.innerWidth);
         const activeChats = this.props.connectedUsers.slice(0, maxActiveChats);
         const inactiveChats = this.props.connectedUsers.slice(maxActiveChats, this.props.connectedUsers.length);
         return (
             <div>
                 <Header />
-                {this.renderHorizontalOnlineUsers.call(this, maxActiveChats, inactiveChats)}
+                <HorizontalUserList maxActiveChats={maxActiveChats} inactiveChats={inactiveChats} setActiveUser={this.setActiveUser.bind(this)} />
+                
                 {this.renderActiveChats.call(this, maxActiveChats, activeChats)}
             </div>
         );
-    }
-
-    private renderHorizontalOnlineUsers(maxActiveChats, inactiveChats) {
-        if (inactiveChats.length === 0)
-            return "";
-        return (
-            <div>
-                <div className="scrollview-header">
-                    Online Users
-                    </div>
-                <div className="scrollmenu">
-                    {inactiveChats.map((inactiveChat, index) => {
-                        const backgroundColor = backgroundColors[index % maxActiveChats];
-                        let boxAnimation = "none";
-                        // Remind Agent to reply, if haven't replied in one minute.
-                        if (inactiveChat.lastMessageTimer > 60) {
-                            boxAnimation = `blink-alert .5s step-end infinite alternate`;
-                        }
-                        return (
-                            <span onClick={(ev) => this.setActiveUser.call(this, inactiveChat.id)} key={index} style={{ background: backgroundColor, animation: boxAnimation }}><div>
-                                {inactiveChat.name.substring(0, 1)}</div>
-                            </span>
-
-                        )
-                    })}
-                </div>
-            </div>
-        )
     }
 
     renderActiveChats(maxActiveChats, activeChats) {
@@ -135,6 +115,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
                                 onKeyPress={(ev) => this.handleKeyPress(ev, user.id, activeChat.id)}
                                 onFocus={() => this.onInputFocused(activeChat.id)}
                                 onChange={(ev) => this.handleMessageChange.call(this, ev, activeChat.id)}
+                                onBlur={this.inInputBlurred.bind(this)}
                                 rows={4} />
                         </div>
                     </div>
@@ -148,6 +129,44 @@ class AgentChatClass extends React.Component<IProps, IState> {
         this.setState({
             currentlyChattingUser: userId
         });
+    }
+
+    private inInputBlurred() {
+        this.setState({
+            currentlyChattingUser: ""
+        });
+    }
+
+    private handleMessageChange = (e, userId) => {
+        const inputMessages = this.state.inputMessages;
+        inputMessages[userId] = e.target.value;
+
+        if (e.target.value.length >= 1)
+            this.getSuggestions.call(this, e.target.value);
+        this.setState({
+            inputMessages
+        })
+    }
+
+    private handleKeyPress(ev, senderId, receiverId) {
+        const { inputMessages } = this.state;
+        const message = (inputMessages[receiverId] ? inputMessages[receiverId] : "");
+        if (ev.which === 13) {
+            const store = getStore();
+            store.dispatch(sendMessageToAgent({
+                senderId,
+                receiverId,
+                message
+            }));
+
+            const inputMessages = this.state.inputMessages;
+            inputMessages[receiverId] = "";
+            this.setState({
+                inputMessages
+            })
+
+            ev.preventDefault();
+        }
     }
 
     private getSuggestions(newValue) {
@@ -189,38 +208,6 @@ class AgentChatClass extends React.Component<IProps, IState> {
 
     private setActiveUser(userId) {
         this.props.dispatch(setActiveUser(userId));
-    }
-
-    private handleMessageChange = (e, userId) => {
-        const inputMessages = this.state.inputMessages;
-        inputMessages[userId] = e.target.value;
-
-        if (e.target.value.length >= 1)
-            this.getSuggestions.call(this, e.target.value);
-        this.setState({
-            inputMessages
-        })
-    }
-
-    private handleKeyPress(ev, senderId, receiverId) {
-        const { inputMessages } = this.state;
-        const message = (inputMessages[receiverId] ? inputMessages[receiverId] : "");
-        if (ev.which === 13) {
-            const store = getStore();
-            store.dispatch(sendMessageToAgent({
-                senderId,
-                receiverId,
-                message
-            }));
-
-            const inputMessages = this.state.inputMessages;
-            inputMessages[receiverId] = "";
-            this.setState({
-                inputMessages
-            })
-
-            ev.preventDefault();
-        }
     }
 
     private formatSeconds(totalSeconds) {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import {user_types, chats_types} from '../types/types';
+import {user_types, chats_types} from '../../types/types';
 interface IProps {
     chats: chats_types | any
     user: user_types

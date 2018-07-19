@@ -4,7 +4,7 @@ import { getStore } from '../store';
 import "../resources/styles/components/chat/ChatBox.scss";
 import { Header } from "./common/Header";
 import { connect } from 'react-redux';
-import { Chats } from './Chats';
+import { Chats } from './common/Chats';
 import {user_types, chatBoard_types, chats_types, agent_types} from '../types/types';
 interface IProps {
     user: user_types;
@@ -12,6 +12,7 @@ interface IProps {
     chats: chats_types;
     agent: agent_types;
     dispatch?
+    history?
 }
 
 interface IState {
@@ -21,6 +22,10 @@ interface IState {
 class UserChatClass extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
+        const { user } = this.props;
+        if(!user.id) {
+            this.props.history.push("/");
+        }
         this.state = {
             message: "",
         };
@@ -37,7 +42,7 @@ class UserChatClass extends React.Component<IProps, IState> {
         if (!agent.id) {
             return (
                 <div>
-                    Waiting for agent.....
+                    No Agent Assign to the user, please run the Agent first and run the app "/"
                 </div>
             )
         }

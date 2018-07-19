@@ -3,12 +3,9 @@ import {Link} from "react-router-dom";
 import { connect } from 'react-redux';
 import "../../resources/styles/components/common/Header.scss";
 import { changeOnlineCounter, changeOfflineCounter, setUserOnlineStatus } from "../../actions/userActions";
+import {user_types} from '../../types/types';
 interface IProps {
-    user: {
-        isOnline: boolean,
-        onlineCount: number,
-        offlineCount: number
-    };
+    user: user_types;
     dispatch?
 }
 
@@ -87,12 +84,12 @@ export class HeaderClass extends React.Component<IProps, IState> {
     }
 
     public render() {
-        const { onlineCount, offlineCount, isOnline } = this.props.user;
+        const { onlineCount, offlineCount, isOnline, name } = this.props.user;
         const statusDropDownClass = (isOnline) ? "border-online" : "border-offline";
         //console.log(onlineCount, offlineCount);
         return (
             <div className="header">
-  <a href="#default" className="logo">Front End Challenge</a>
+                <a href="#default" className="logo">Front End Challenge - {name}</a>
   <div className="headerrightitems">
     <div className={`selectWrapper ${statusDropDownClass}`}>
             <select className="selectBox" onChange={this.changeStatusChange.bind(this)}>

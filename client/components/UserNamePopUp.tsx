@@ -44,8 +44,14 @@ export class UserNamePopUp extends React.Component<IProps, IState> {
             if (this.state.userName) {
                 const store = getStore();
                 const userId = uuidv4();
+
+                // Store User Information.
                 store.dispatch(setUserInfo(this.state.userName, this.state.isAgent, userId));
+
+                // Send User Information to Server.
                 store.dispatch(createChatBoard(userId));
+
+                // If User redirect him to User Chat Page, else redirect to Agent page.
                 if(this.state.isAgent) {
                     this.props.history.push("/agent/" + userId);
                 } else {
