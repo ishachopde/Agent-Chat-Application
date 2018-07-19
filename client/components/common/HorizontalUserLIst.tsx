@@ -38,7 +38,7 @@ export class HorizontalUserList extends React.Component<IProps, {}> {
                         }
                         return (
                             <span onClick={(ev) => setActiveUser(inactiveChat.id)} key={index} style={{ background: backgroundColor, animation: boxAnimation }}><div>
-                                {inactiveChat.name.substring(0, 1)}</div>
+                                {inactiveChat.name.substring(0, 1).toUpperCase()}</div>
                             </span>
     
                         )
