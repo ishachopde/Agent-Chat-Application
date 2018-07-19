@@ -115,7 +115,7 @@ class AgentChatClass extends React.Component<IProps, IState> {
                             <Suggestions userId={activeChat.id} results={suggestions} onSuggestionClick={this.onSuggestionClick.bind(this)} />
                             <div className="msg_footer_info_box">
                                 {
-                                    (!activeChat.isOnline) ? "User disconnected" : ""
+                                    (!activeChat.isOnline) ? "User offline" : ""
                                 }
                             </div>
                             <textarea

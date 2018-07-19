@@ -73,7 +73,7 @@ class UserChatClass extends React.Component<IProps, IState> {
                         </div><div className="msg_footer">
                             <div className="msg_footer_info_box">
                                 {
-                                    (!agent.isOnline) ? "Agent disconnected" : ""
+                                    (!agent.isOnline) ? "Agent offline" : ""
                                 }
                         </div>
                             <textarea className="msg_input" placeholder="Type a message.." disabled={!agent.isOnline} value={this.state.message}
