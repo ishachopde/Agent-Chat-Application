@@ -989,7 +989,6 @@ exports.default = (state = initialState_1.default.agent, action) => {
         case 'agent-assigned':
             return action.payload.agent;
         case 'set-connected-agent-online-status':
-            console.log(Object.assign({}, state, { isOnline: action.payload.status }));
             return Object.assign({}, state, { isOnline: action.payload.status });
         default:
             return state;
@@ -1033,7 +1032,6 @@ exports.default = (state = initialState_1.default.chatBoard, action) => {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/initialState.ts");
-const chats = {};
 exports.default = (state = initialState_1.default.chats, action) => {
     switch (action.type) {
         case 'message-sent':
@@ -1087,7 +1085,6 @@ const initialState_1 = __webpack_require__(/*! ../initialState */ "./client/init
 exports.default = (state = initialState_1.default.connectedUsers, action) => {
     switch (action.type) {
         case 'user-connected':
-            console.log(...state, action.payload.user);
             return [
                 ...state,
                 Object.assign({}, action.payload.user, { lastMessageTimer: 0, isNewMessage: false, isOnline: true })
@@ -1097,13 +1094,9 @@ exports.default = (state = initialState_1.default.connectedUsers, action) => {
             return state.map(user => user.id === userId ? Object.assign({}, user, { isOnline: status }) : user);
         case 'message-sent':
             const { receiverId } = action.payload.message;
-            console.log(receiverId);
-            console.log(state.map(user => user.id === receiverId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: false }) : user));
             return state.map(user => user.id === receiverId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: false }) : user);
         case 'message-received':
-            console.log(action.payload);
             const { senderId } = action.payload.message;
-            console.log(state.map(user => user.id === senderId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: true }) : user));
             return state.map(user => user.id === senderId ? Object.assign({}, user, { lastMessageTimer: 0, isNewMessage: true }) : user);
         case 'change-last-message-counter':
             return state.map(user => user.id === action.payload.userId ? Object.assign({}, user, { lastMessageTimer: user.lastMessageTimer + 1 }) : user);
@@ -5470,7 +5463,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../../node_modules/c
 
 
 // module
-exports.push([module.i, ".suggestions {\n  padding-left: 0px;\n  margin: 0px;\n  background-color: #fff;\n  background: rgba(255, 255, 255, 0);\n  list-style: none;\n  position: absolute;\n  width: 100%;\n  bottom: 68px; }\n\n.suggestions li {\n  padding: 10px;\n  border: 1px solid #D4D9DF;\n  background-color: #F9FAFE; }\n", ""]);
+exports.push([module.i, "/**\n * AI suggestions styles.\n * @author  Isha CHopde\n */\n.suggestions {\n  padding-left: 0px;\n  margin: 0px;\n  background-color: #fff;\n  background: rgba(255, 255, 255, 0);\n  list-style: none;\n  position: absolute;\n  width: 100%;\n  bottom: 68px; }\n\n.suggestions li {\n  padding: 10px;\n  border: 1px solid #D4D9DF;\n  background-color: #F9FAFE; }\n", ""]);
 
 // exports
 

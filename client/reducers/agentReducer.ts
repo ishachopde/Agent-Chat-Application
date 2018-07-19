@@ -1,3 +1,7 @@
+/**
+ * reducer to handle actions related to Agent.
+ * @author  Isha CHopde
+ */
 import initialState from "../initialState";
 
 export default (state = initialState.agent, action) => {
@@ -5,10 +9,6 @@ export default (state = initialState.agent, action) => {
         case 'agent-assigned':
             return action.payload.agent;
         case 'set-connected-agent-online-status':
-            console.log({
-                ...state,
-                isOnline: action.payload.status
-            });
             return {
                 ...state,
                 isOnline: action.payload.status

@@ -1,7 +1,5 @@
 import initialState from "../initialState";
-const chats = {
 
-};
 export default (state = initialState.chats, action) => {
     switch(action.type) {
         case 'message-sent':

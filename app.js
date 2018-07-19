@@ -1,3 +1,8 @@
+/**
+ * Set up views, error handling and routing paths for express server.
+ * @author  Isha CHopde
+ */
+
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');

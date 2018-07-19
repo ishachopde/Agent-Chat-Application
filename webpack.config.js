@@ -1,3 +1,7 @@
+/**
+ * Provides Webpack configuration for the project.
+ * @author  Isha CHopde
+ */
 const path = require("path");
 module.exports = {
     entry: "./client/index.tsx",

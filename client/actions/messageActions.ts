@@ -1,3 +1,7 @@
+/**
+ * User-agent communication messages related redux actions.
+ * @author  Isha CHopde
+ */
 export const UPDATE_MESSAGE = 'update-message';
 export const SEND_MESSAGE_TO_AGENT = 'message-sent';
 export const MESSAGE_RECEIVED = 'message-received';

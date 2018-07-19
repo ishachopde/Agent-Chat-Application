@@ -1,3 +1,7 @@
+/**
+ * Component to display AI suggestions for the input value.
+ * @author  Isha CHopde
+ */
 import * as React from 'react'
 import "../../resources/styles/components/common/AISuggestions.scss";
 const Suggestions = ({userId, results, onSuggestionClick}) => {

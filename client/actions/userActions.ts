@@ -1,3 +1,8 @@
+/**
+ * User related redux actions.
+ * @author  Isha CHopde
+ */
+
 export const CHANGE_USERINFO = 'change-userinfo';
 export const CREATE_CHAT_BOARD = 'create-chat-board';
 export const AGENT_ASSIGNED = 'agent-assigned';
