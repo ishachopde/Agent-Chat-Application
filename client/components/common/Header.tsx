@@ -93,7 +93,7 @@ export class HeaderClass extends React.Component<IProps, IState> {
         //console.log(onlineCount, offlineCount);
         return (
             <div className="header">
-                <a href="#default" className="logo">Front End Challenge - {name}</a>
+                <a href="#default" className="logo">FAgent Chat Application: Isha Chopde - {name}</a>
   <div className="headerrightitems">
     <div className={`selectWrapper ${statusDropDownClass}`}>
             <select className="selectBox" onChange={this.changeStatusChange.bind(this)}>
